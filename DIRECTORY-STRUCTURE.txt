@@ -1,0 +1,93 @@
+====================================
+EMAIL SERVER DIRECTORY STRUCTURE
+====================================
+
+After deployment, your VPS will have the following structure:
+
+/var/email-server/                          # Main email server directory
+├── config/                                 # Configuration files
+│   ├── main.cf                            # Postfix main configuration
+│   ├── master.cf                          # Postfix master process configuration
+│   ├── opendkim.conf                      # OpenDKIM configuration
+│   ├── signing.table                      # DKIM signing table
+│   ├── key.table                          # DKIM key table
+│   └── trusted.hosts                      # DKIM trusted hosts
+├── scripts/                                # PHP scripts and tools
+│   ├── vendor/                            # PHPMailer dependencies (auto-generated)
+│   ├── composer.json                      # PHP dependencies definition
+│   ├── composer.lock                      # PHP dependencies lock file (auto-generated)
+│   ├── test-email.php                     # Test email sending script
+│   └── send-email.php                     # Production email sending script
+├── keys/                                   # Reserved for additional keys (empty initially)
+├── logs/                                   # Reserved for application logs (empty initially)
+└── install.sh                             # Installation script (copied here)
+
+/etc/postfix/                               # Postfix system configuration
+├── main.cf                                # Main Postfix configuration (symlinked from /var/email-server/config/)
+├── master.cf                              # Master process configuration (symlinked from /var/email-server/config/)
+├── main.cf.backup.[timestamp]             # Backup of original configuration
+└── master.cf.backup.[timestamp]           # Backup of original configuration
+
+/etc/opendkim/                              # OpenDKIM system configuration
+├── opendkim.conf                          # Main OpenDKIM configuration
+├── signing.table                          # Signing table
+├── key.table                              # Key table
+├── trusted.hosts                          # Trusted hosts
+└── keys/                                  # DKIM keys directory
+    └── fx.avameta.dev/                    # Domain-specific keys
+        ├── mail.private                   # Private key (keep secure!)
+        └── mail.txt                       # Public key (for DNS)
+
+/etc/                                       # System configuration
+└── mailname                               # Contains: fx.avameta.dev
+
+/var/log/                                   # System logs
+├── postfix.log                            # Postfix application log
+└── mail.log                               # General mail log
+
+====================================
+FILE PURPOSES
+====================================
+
+Configuration Files:
+- main.cf: Controls Postfix behavior, SMTP settings, security restrictions
+- master.cf: Defines Postfix services and process management
+- opendkim.conf: OpenDKIM daemon configuration and DKIM signing settings
+- signing.table: Maps email addresses to DKIM keys
+- key.table: Maps DKIM selectors to private key locations
+- trusted.hosts: Lists trusted hosts for DKIM signing
+
+PHP Scripts:
+- test-email.php: Sends a test email to verify server functionality
+- send-email.php: Production script for sending custom emails
+- composer.json: Defines PHPMailer dependency
+
+Keys:
+- mail.private: DKIM private key (must be kept secure!)
+- mail.txt: DKIM public key (add to DNS TXT record)
+
+Scripts:
+- install.sh: Main installation script
+- setup-server.sh: Complete setup orchestration script
+
+====================================
+IMPORTANT SECURITY NOTES
+====================================
+
+SECURE FILES (chmod 600 or 700):
+- /etc/opendkim/keys/fx.avameta.dev/mail.private
+
+PUBLIC FILES (chmod 644):
+- /etc/opendkim/keys/fx.avameta.dev/mail.txt
+- All configuration files in /var/email-server/config/
+
+EXECUTABLE FILES (chmod 755):
+- /var/email-server/scripts/*.php
+- /var/email-server/install.sh
+
+OWNERSHIP:
+- /etc/opendkim/: owned by opendkim:opendkim
+- /var/email-server/: owned by root:root
+- /etc/postfix/: owned by root:root
+
+====================================

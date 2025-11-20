@@ -1,0 +1,249 @@
+====================================
+EMAIL SERVER DEPLOYMENT GUIDE
+fx.avameta.dev
+====================================
+
+COMPLETE STEP-BY-STEP INSTRUCTIONS
+Copy and paste these commands directly into your Ubuntu VPS terminal.
+
+====================================
+STEP 1: UPLOAD FILES TO VPS
+====================================
+
+From your LOCAL machine, upload all files to your VPS:
+
+scp -r * root@[YOUR_VPS_IP]:/root/email-server-setup/
+
+Replace [YOUR_VPS_IP] with your actual VPS IP address.
+
+Alternative: Use SFTP or copy files manually.
+
+====================================
+STEP 2: CONNECT TO YOUR VPS
+====================================
+
+ssh root@[YOUR_VPS_IP]
+
+====================================
+STEP 3: NAVIGATE TO SETUP DIRECTORY
+====================================
+
+cd /root/email-server-setup
+
+====================================
+STEP 4: MAKE SCRIPTS EXECUTABLE
+====================================
+
+chmod +x setup-server.sh install.sh
+
+====================================
+STEP 5: RUN THE SETUP SCRIPT
+====================================
+
+sudo bash setup-server.sh
+
+This will:
+- Install all required packages (Postfix, OpenDKIM, PHP, Composer)
+- Create /var/email-server directory structure
+- Configure Postfix and OpenDKIM
+- Generate DKIM keys
+- Install PHPMailer
+- Start all services
+
+Wait for the installation to complete (5-10 minutes).
+
+====================================
+STEP 6: GET YOUR DKIM PUBLIC KEY
+====================================
+
+sudo cat /etc/opendkim/keys/fx.avameta.dev/mail.txt
+
+Copy the entire output. You'll need this for DNS configuration.
+
+Example output:
+mail._domainkey IN TXT ( "v=DKIM1; h=sha256; k=rsa; "
+"p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA..." )
+
+For DNS, combine the parts in quotes into a single line:
+v=DKIM1; h=sha256; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+
+====================================
+STEP 7: CONFIGURE DNS RECORDS
+====================================
+
+Go to your domain DNS provider and add these records:
+
+1. MX Record:
+   Type: MX
+   Name: @
+   Value: fx.avameta.dev
+   Priority: 10
+
+2. SPF Record:
+   Type: TXT
+   Name: @
+   Value: v=spf1 mx a ip4:[YOUR_VPS_IP] ~all
+
+3. DKIM Record:
+   Type: TXT
+   Name: mail._domainkey
+   Value: [PASTE YOUR DKIM KEY FROM STEP 6]
+
+4. DMARC Record:
+   Type: TXT
+   Name: _dmarc
+   Value: v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@fx.avameta.dev
+
+5. PTR Record (via VPS provider):
+   Contact your VPS provider to set reverse DNS:
+   [YOUR_VPS_IP] → fx.avameta.dev
+
+Wait 1-6 hours for DNS propagation.
+
+====================================
+STEP 8: VERIFY DNS RECORDS
+====================================
+
+Check if DNS records are propagated:
+
+nslookup -type=mx fx.avameta.dev
+nslookup -type=txt fx.avameta.dev
+nslookup -type=txt mail._domainkey.fx.avameta.dev
+nslookup -type=txt _dmarc.fx.avameta.dev
+
+Or use online tools:
+https://dnschecker.org
+https://mxtoolbox.com/SuperTool.aspx
+
+====================================
+STEP 9: TEST EMAIL SENDING
+====================================
+
+Test with the included test script:
+
+sudo php /var/email-server/scripts/test-email.php
+
+This sends a test email to test@example.com.
+Replace the recipient in the script with your actual email.
+
+Edit test script:
+sudo nano /var/email-server/scripts/test-email.php
+
+Change line:
+$mail->addAddress('test@example.com', 'Test Recipient');
+
+To:
+$mail->addAddress('your-actual-email@gmail.com', 'Your Name');
+
+Then run:
+sudo php /var/email-server/scripts/test-email.php
+
+====================================
+STEP 10: SEND CUSTOM EMAILS
+====================================
+
+Use the send-email.php script for production:
+
+sudo php /var/email-server/scripts/send-email.php \
+  "recipient@example.com" \
+  "Recipient Name" \
+  "Email Subject" \
+  "<h1>Hello</h1><p>This is the email body</p>"
+
+====================================
+STEP 11: CHECK EMAIL DELIVERABILITY
+====================================
+
+Test your email server quality:
+
+1. Go to https://www.mail-tester.com/
+2. Copy the provided email address
+3. Send an email to that address:
+
+sudo php /var/email-server/scripts/send-email.php \
+  "test-xxxxx@srv1.mail-tester.com" \
+  "Mail Tester" \
+  "Deliverability Test" \
+  "<p>Testing email server configuration</p>"
+
+4. Check your score (aim for 8/10 or higher)
+
+====================================
+TROUBLESHOOTING
+====================================
+
+Check Postfix status:
+sudo systemctl status postfix
+
+Check OpenDKIM status:
+sudo systemctl status opendkim
+
+View Postfix logs:
+sudo tail -f /var/log/postfix.log
+
+View mail queue:
+sudo postqueue -p
+
+Test Postfix config:
+sudo postfix check
+
+Restart services:
+sudo systemctl restart postfix
+sudo systemctl restart opendkim
+
+====================================
+FILE LOCATIONS
+====================================
+
+Configuration files:
+/var/email-server/config/
+
+PHP scripts:
+/var/email-server/scripts/
+
+DKIM keys:
+/etc/opendkim/keys/fx.avameta.dev/
+
+Postfix config:
+/etc/postfix/main.cf
+/etc/postfix/master.cf
+
+OpenDKIM config:
+/etc/opendkim.conf
+
+Logs:
+/var/log/postfix.log
+/var/log/mail.log
+
+====================================
+SECURITY NOTES
+====================================
+
+1. Keep your VPS updated:
+   sudo apt update && sudo apt upgrade -y
+
+2. Configure firewall:
+   sudo ufw allow 25/tcp
+   sudo ufw allow 587/tcp
+   sudo ufw allow 465/tcp
+   sudo ufw enable
+
+3. Monitor logs regularly:
+   sudo tail -f /var/log/postfix.log
+
+4. Set up fail2ban (optional):
+   sudo apt install fail2ban
+
+====================================
+SUPPORT
+====================================
+
+If you encounter issues:
+
+1. Check service status and logs
+2. Verify DNS records are propagated
+3. Ensure PTR record is configured
+4. Test with mail-tester.com
+5. Check firewall allows ports 25, 587, 465
+
+====================================

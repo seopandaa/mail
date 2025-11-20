@@ -1,0 +1,106 @@
+====================================
+DNS RECORDS FOR fx.avameta.dev
+====================================
+
+IMPORTANT: Add these records to your DNS provider's control panel.
+Replace [YOUR_VPS_IP] with your actual VPS IP address.
+Replace [DKIM_PUBLIC_KEY] with the value from: sudo cat /etc/opendkim/keys/fx.avameta.dev/mail.txt
+
+------------------------------------
+1. A RECORD (if not already set)
+------------------------------------
+Type: A
+Name: fx.avameta.dev (or @)
+Value: [YOUR_VPS_IP]
+TTL: 3600
+
+------------------------------------
+2. MX RECORD
+------------------------------------
+Type: MX
+Name: @ (or fx.avameta.dev)
+Value: fx.avameta.dev
+Priority: 10
+TTL: 3600
+
+------------------------------------
+3. SPF RECORD
+------------------------------------
+Type: TXT
+Name: @ (or fx.avameta.dev)
+Value: v=spf1 mx a ip4:[YOUR_VPS_IP] ~all
+TTL: 3600
+
+Example with IP:
+v=spf1 mx a ip4:123.45.67.89 ~all
+
+------------------------------------
+4. DKIM RECORD
+------------------------------------
+Type: TXT
+Name: mail._domainkey (or mail._domainkey.fx.avameta.dev)
+Value: [DKIM_PUBLIC_KEY]
+TTL: 3600
+
+To get your DKIM public key, run:
+sudo cat /etc/opendkim/keys/fx.avameta.dev/mail.txt
+
+The output will look like:
+mail._domainkey IN TXT ( "v=DKIM1; h=sha256; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA..." )
+
+Copy only the part inside the quotes, for example:
+v=DKIM1; h=sha256; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+
+If it's split across multiple lines, combine them into one line.
+
+------------------------------------
+5. DMARC RECORD
+------------------------------------
+Type: TXT
+Name: _dmarc (or _dmarc.fx.avameta.dev)
+Value: v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@fx.avameta.dev; ruf=mailto:dmarc-failures@fx.avameta.dev; fo=1; adkim=r; aspf=r; pct=100; ri=86400
+TTL: 3600
+
+------------------------------------
+6. PTR RECORD (Reverse DNS)
+------------------------------------
+This is configured through your VPS provider, not your domain DNS.
+
+Contact your VPS provider and request:
+PTR Record: [YOUR_VPS_IP] → fx.avameta.dev
+
+This is CRITICAL for email deliverability!
+
+====================================
+VERIFICATION
+====================================
+
+After adding DNS records, verify them:
+
+1. Check MX record:
+   nslookup -type=mx fx.avameta.dev
+
+2. Check SPF record:
+   nslookup -type=txt fx.avameta.dev
+
+3. Check DKIM record:
+   nslookup -type=txt mail._domainkey.fx.avameta.dev
+
+4. Check DMARC record:
+   nslookup -type=txt _dmarc.fx.avameta.dev
+
+5. Test deliverability:
+   https://www.mail-tester.com/
+   Send an email to the provided address and check your score.
+
+====================================
+DNS PROPAGATION
+====================================
+
+DNS changes can take 1-48 hours to propagate globally.
+Most changes propagate within 1-6 hours.
+
+Check propagation status:
+https://dnschecker.org
+
+====================================

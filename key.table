@@ -1,0 +1,1 @@
+mail._domainkey.fx.avameta.dev fx.avameta.dev:mail:/etc/opendkim/keys/fx.avameta.dev/mail.private
