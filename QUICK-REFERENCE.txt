@@ -1,0 +1,239 @@
+====================================
+QUICK REFERENCE CARD
+Email Server Commands
+====================================
+
+====================================
+SEND EMAILS (Main Use)
+====================================
+
+Simple bulk send:
+    php send.php
+
+That's it! The script handles everything.
+
+====================================
+FIX CONNECTION REFUSED
+====================================
+
+Problem: "SMTP Error: Connection refused"
+
+Quick fix:
+    sudo bash /mail/start-email-server.sh
+
+Or just run:
+    php send.php
+    (It auto-fixes now!)
+
+Permanent fix:
+    sudo bash /mail/fix-postfix.sh
+
+====================================
+CHECK STATUS
+====================================
+
+Health check:
+    sudo bash /mail/check-email-server.sh
+
+Full diagnostics:
+    sudo bash /mail/diagnose.sh
+
+Check Postfix only:
+    systemctl status postfix
+
+====================================
+LOGS
+====================================
+
+Live email logs:
+    tail -f /var/email-server/logs/email-log.txt
+
+Live system mail logs:
+    tail -f /var/log/mail.log
+
+Last 20 lines:
+    tail -20 /var/email-server/logs/email-log.txt
+
+====================================
+CONFIGURATION
+====================================
+
+Edit recipients:
+    nano /var/email-server/email-list.txt
+
+Edit template:
+    nano /var/email-server/letter.html
+
+Edit settings:
+    nano /var/email-server/config.json
+
+====================================
+TROUBLESHOOTING
+====================================
+
+Start services:
+    sudo bash /mail/start-email-server.sh
+
+Fix everything:
+    sudo bash /mail/fix-postfix.sh
+
+Update scripts:
+    sudo bash /mail/update-scripts.sh
+
+Test email:
+    php /var/email-server/scripts/test-email.php
+
+====================================
+WARMUP (Indonesian Prime Time)
+====================================
+
+Setup 7 PM daily:
+    timedatectl set-timezone Asia/Jakarta
+    cp /mail/config-indonesia-primetime.json /var/email-server/config.json
+    sudo bash /mail/setup-cron.sh
+
+Check warmup status:
+    php /var/email-server/scripts/warmup-scheduler.php status
+
+Force warmup send:
+    php /var/email-server/scripts/warmup-scheduler.php force
+
+====================================
+FILE LOCATIONS
+====================================
+
+Main directory:      /var/email-server/
+Simple sender:       /var/email-server/send.php
+Recipients list:     /var/email-server/email-list.txt
+Email template:      /var/email-server/letter.html
+Configuration:       /var/email-server/config.json
+Logs:                /var/email-server/logs/
+Setup files:         /mail/
+
+====================================
+COMMON WORKFLOWS
+====================================
+
+Workflow 1: Regular Sending
+----------------------------
+1. nano /var/email-server/email-list.txt
+2. php send.php
+3. Done!
+
+Workflow 2: After Disconnect
+-----------------------------
+1. sudo bash /mail/start-email-server.sh
+2. php send.php
+3. Done!
+
+Workflow 3: Troubleshooting
+----------------------------
+1. sudo bash /mail/check-email-server.sh
+2. sudo bash /mail/fix-postfix.sh
+3. php send.php
+4. Done!
+
+====================================
+SERVICE MANAGEMENT
+====================================
+
+Start all:
+    sudo bash /mail/start-email-server.sh
+
+Start Postfix only:
+    sudo systemctl start postfix
+
+Start OpenDKIM only:
+    sudo systemctl start opendkim
+
+Stop Postfix:
+    sudo systemctl stop postfix
+
+Restart Postfix:
+    sudo systemctl restart postfix
+
+Enable auto-start:
+    sudo systemctl enable postfix
+    sudo systemctl enable opendkim
+
+====================================
+DOCUMENTATION
+====================================
+
+Connection fix:      FIX-CONNECTION-REFUSED.txt
+Latest updates:      LATEST-UPDATES.txt
+Quick start:         QUICKSTART.txt
+Simple usage:        SIMPLE-USAGE.txt
+Warmup guide:        WARMUP-SETUP-GUIDE.txt
+Troubleshooting:     TROUBLESHOOTING.txt
+Complete docs:       README.md
+
+View any doc:
+    cat /mail/FILENAME.txt
+
+====================================
+HELPER SCRIPTS
+====================================
+
+start-email-server.sh    Start services
+check-email-server.sh    Health check
+diagnose.sh              Full diagnostics
+fix-postfix.sh           Fix configuration
+fix-cron.sh              Fix cron
+update-scripts.sh        Update scripts
+deploy-simple.sh         Deploy send.php
+setup-cron.sh            Setup warmup cron
+
+All in: /mail/
+
+====================================
+TIPS
+====================================
+
+1. Run fix-postfix.sh once after setup
+   (Enables auto-start, services stay running)
+
+2. Use send.php for everything
+   (It auto-checks and fixes Postfix)
+
+3. Check logs if issues
+   (tail -f /var/email-server/logs/email-log.txt)
+
+4. Test with real emails first
+   (Add your own email to test)
+
+5. Start small, increase gradually
+   (5-10 emails first, then more)
+
+====================================
+EMERGENCY
+====================================
+
+If everything breaks:
+
+1. sudo bash /mail/diagnose.sh
+2. Read the output
+3. Follow recommendations
+4. sudo bash /mail/fix-postfix.sh
+5. Test: php send.php
+
+====================================
+ONE-LINERS
+====================================
+
+Send bulk emails:
+    php send.php
+
+Fix connection refused:
+    sudo bash /mail/start-email-server.sh
+
+Check if working:
+    sudo bash /mail/check-email-server.sh
+
+Fix everything:
+    sudo bash /mail/fix-postfix.sh
+
+View logs:
+    tail -f /var/email-server/logs/email-log.txt
+
+====================================

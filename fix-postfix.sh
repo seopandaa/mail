@@ -76,7 +76,12 @@ else
     exit 1
 fi
 
-echo "[5/5] Restarting services..."
+echo "[5/5] Restarting and enabling services..."
+
+# Enable services to start on boot
+systemctl enable opendkim >/dev/null 2>&1
+systemctl enable postfix >/dev/null 2>&1
+echo "  ✓ Services enabled to start on boot"
 
 # Restart services
 systemctl restart opendkim

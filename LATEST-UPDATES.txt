@@ -1,0 +1,374 @@
+====================================
+LATEST UPDATES - Connection Fix
+====================================
+
+Version: 2.1
+Date: 2025-11-21
+Focus: Fix "Connection Refused" Issue
+
+====================================
+PROBLEM SOLVED
+====================================
+
+Issue:
+------
+Every time you disconnect and reconnect to the server,
+Postfix stops running, causing emails to fail with:
+"SMTP Error: Could not connect to SMTP host. Connection refused"
+
+Root Cause:
+-----------
+Postfix service was not enabled for auto-start,
+so it stopped when you disconnected.
+
+Solution:
+---------
+Multiple fixes have been added to handle this automatically!
+
+====================================
+NEW FILES ADDED
+====================================
+
+1. start-email-server.sh
+   - Starts Postfix and OpenDKIM
+   - Enables auto-start on boot
+   - Shows service status
+   - Run before sending emails
+
+2. check-email-server.sh
+   - Health check for email server
+   - Shows which services are running
+   - Verifies configuration files
+   - Provides fix recommendations
+
+3. diagnose.sh
+   - Comprehensive diagnostics
+   - System information
+   - Service status
+   - Configuration verification
+   - Network status
+   - Recent logs
+   - Recommendations
+
+4. FIX-CONNECTION-REFUSED.txt
+   - Complete guide for fixing connection issues
+   - Multiple solutions
+   - Step-by-step instructions
+   - Troubleshooting tips
+
+====================================
+UPDATED FILES
+====================================
+
+1. send.php (Enhanced)
+   - Now auto-checks if Postfix is running
+   - Automatically starts Postfix if stopped
+   - Shows clear status messages
+   - Better error handling
+
+2. fix-postfix.sh (Improved)
+   - Now enables auto-start on boot
+   - More reliable service restart
+   - Better status reporting
+
+====================================
+HOW TO USE
+====================================
+
+Option 1: Automatic (Easiest)
+------------------------------
+Just run:
+    php send.php
+
+The script now:
+✓ Checks if Postfix is running
+✓ Starts it automatically if needed
+✓ Proceeds with sending
+
+Option 2: Manual Start
+----------------------
+Before sending, run:
+    sudo bash /mail/start-email-server.sh
+
+Then send:
+    php send.php
+
+Option 3: Health Check First
+-----------------------------
+1. Check status:
+   sudo bash /mail/check-email-server.sh
+
+2. If issues, fix:
+   sudo bash /mail/fix-postfix.sh
+
+3. Send emails:
+   php send.php
+
+====================================
+QUICK COMMANDS
+====================================
+
+Start services:
+    sudo bash /mail/start-email-server.sh
+
+Check health:
+    sudo bash /mail/check-email-server.sh
+
+Full diagnostics:
+    sudo bash /mail/diagnose.sh
+
+Fix everything:
+    sudo bash /mail/fix-postfix.sh
+
+Send emails:
+    php send.php
+
+====================================
+PERMANENT FIX
+====================================
+
+To permanently fix the auto-start issue:
+
+    sudo bash /mail/fix-postfix.sh
+
+This will:
+1. Fix Postfix configuration
+2. Enable auto-start on boot
+3. Start all services
+4. Verify everything works
+
+After this, services will automatically start
+when the server boots or restarts.
+
+====================================
+VERIFICATION
+====================================
+
+Check if auto-start is enabled:
+
+    systemctl is-enabled postfix
+    systemctl is-enabled opendkim
+
+Should both return: "enabled"
+
+If not, run:
+    sudo systemctl enable postfix
+    sudo systemctl enable opendkim
+
+====================================
+WHAT'S DIFFERENT NOW?
+====================================
+
+Before:
+-------
+❌ Postfix stopped when you disconnected
+❌ Had to manually restart every time
+❌ No auto-detection of issues
+❌ Confusing error messages
+
+After:
+------
+✅ send.php auto-checks and starts Postfix
+✅ Multiple helper scripts for diagnostics
+✅ Auto-start enabled by default
+✅ Clear status messages
+✅ Comprehensive health checks
+✅ Easy troubleshooting
+
+====================================
+DEPLOYMENT
+====================================
+
+If you're setting up a new server:
+
+1. Upload package:
+   scp email-server-setup.tar.gz root@SERVER:/root/
+
+2. Extract:
+   ssh root@SERVER
+   mkdir -p /mail
+   tar -xzf email-server-setup.tar.gz -C /mail
+
+3. Setup:
+   cd /mail
+   sudo bash setup-server.sh
+
+4. Deploy simple sender:
+   sudo bash deploy-simple.sh
+
+5. Enable auto-start (done automatically now):
+   sudo bash fix-postfix.sh
+
+6. Test:
+   php /var/email-server/send.php
+
+====================================
+UPDATING EXISTING INSTALLATION
+====================================
+
+If you already have the server setup:
+
+1. Upload new package:
+   scp email-server-setup.tar.gz root@SERVER:/root/
+
+2. Extract:
+   ssh root@SERVER
+   tar -xzf email-server-setup.tar.gz -C /mail
+
+3. Update scripts:
+   cd /mail
+   sudo bash update-scripts.sh
+
+4. Enable auto-start:
+   sudo bash fix-postfix.sh
+
+5. Test:
+   php /var/email-server/send.php
+
+====================================
+TROUBLESHOOTING WORKFLOW
+====================================
+
+Problem: "Connection refused" error
+------------------------------------
+
+Step 1: Check status
+    sudo bash /mail/check-email-server.sh
+
+Step 2: Start services
+    sudo bash /mail/start-email-server.sh
+
+Step 3: Test
+    php /var/email-server/send.php
+
+Step 4: If still failing, run diagnostics
+    sudo bash /mail/diagnose.sh
+
+Step 5: Fix configuration
+    sudo bash /mail/fix-postfix.sh
+
+Step 6: Test again
+    php /var/email-server/send.php
+
+====================================
+COMPLETE FILE LIST
+====================================
+
+New Scripts:
+- start-email-server.sh    Start all services
+- check-email-server.sh    Health check
+- diagnose.sh              Full diagnostics
+
+Updated Scripts:
+- send.php                 Auto-starts Postfix
+- fix-postfix.sh           Enables auto-start
+
+New Documentation:
+- FIX-CONNECTION-REFUSED.txt   Connection fix guide
+- LATEST-UPDATES.txt           This file
+
+Existing Scripts (Unchanged):
+- setup-server.sh          Initial setup
+- deploy-simple.sh         Deploy send.php
+- update-scripts.sh        Update scripts
+- fix-cron.sh             Fix cron issues
+- test-email.php          Test email
+- warmup-scheduler.php    Warmup automation
+
+Configuration Files:
+- config.json             Main configuration
+- config-indonesia-primetime.json  7PM WIB setup
+- letter.html             Email template
+- email-list.txt          Recipients
+- warmup-list.txt         Warmup recipients
+
+Documentation:
+- README.md               Complete documentation
+- QUICKSTART.txt          Quick start guide
+- SIMPLE-USAGE.txt        send.php usage
+- WARMUP-SETUP-GUIDE.txt  Warmup configuration
+- TROUBLESHOOTING.txt     Common issues
+- DEPLOYMENT-GUIDE.txt    Full deployment
+- DNS-RECORDS.txt         DNS setup
+
+====================================
+TESTING THE FIX
+====================================
+
+Test 1: Auto-start
+------------------
+1. Stop Postfix:
+   sudo systemctl stop postfix
+
+2. Run send.php:
+   php /var/email-server/send.php
+
+3. It should auto-detect and start Postfix
+
+Test 2: Manual start
+--------------------
+1. Stop all services:
+   sudo systemctl stop postfix opendkim
+
+2. Start with script:
+   sudo bash /mail/start-email-server.sh
+
+3. Verify both are running
+
+Test 3: Health check
+--------------------
+1. Run health check:
+   sudo bash /mail/check-email-server.sh
+
+2. Should show all green checkmarks
+
+Test 4: Reboot test
+-------------------
+1. Enable auto-start:
+   sudo bash /mail/fix-postfix.sh
+
+2. Reboot server:
+   sudo reboot
+
+3. After reboot, check:
+   systemctl status postfix
+   systemctl status opendkim
+
+4. Both should be running
+
+====================================
+SUPPORT
+====================================
+
+If you encounter issues:
+
+1. Run diagnostics:
+   sudo bash /mail/diagnose.sh
+
+2. Check logs:
+   tail -f /var/log/mail.log
+   tail -f /var/email-server/logs/email-log.txt
+
+3. Review fix guide:
+   cat /mail/FIX-CONNECTION-REFUSED.txt
+
+4. Try complete fix:
+   sudo bash /mail/fix-postfix.sh
+
+====================================
+SUMMARY
+====================================
+
+Problem: Connection refused every time you reconnect
+
+Fix 1: Use send.php (now auto-fixes)
+Fix 2: Run start-email-server.sh before sending
+Fix 3: Run fix-postfix.sh to enable auto-start
+Fix 4: Check status with check-email-server.sh
+
+Best workflow:
+1. Run fix-postfix.sh once (enables auto-start)
+2. Services stay running forever
+3. Just use: php send.php
+
+====================================

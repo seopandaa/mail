@@ -31,6 +31,26 @@ function colorText($text, $color = 'green') {
     return $colors[$color] . $text . $colors['reset'];
 }
 
+function checkPostfixRunning() {
+    exec('systemctl is-active postfix 2>&1', $output, $return);
+    return $return === 0;
+}
+
+function startPostfix() {
+    echo colorText("⚠", 'yellow') . " Postfix is not running. Starting...\n";
+    exec('sudo systemctl start postfix 2>&1', $output, $return);
+
+    if ($return === 0) {
+        sleep(2); // Wait for service to start
+        if (checkPostfixRunning()) {
+            echo colorText("  ✓", 'green') . " Postfix started successfully\n\n";
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function logMessage($message, $level = 'INFO') {
     global $logFile;
     $timestamp = date('Y-m-d H:i:s');
@@ -137,6 +157,21 @@ try {
     echo "====================================\n";
     echo "   Simple Email Sender\n";
     echo "====================================\n\n";
+
+    // Check Postfix status
+    echo colorText("→", 'blue') . " Checking email server...\n";
+    if (!checkPostfixRunning()) {
+        if (!startPostfix()) {
+            echo colorText("  ✗", 'red') . " Failed to start Postfix\n\n";
+            echo "Please run manually:\n";
+            echo "  sudo systemctl start postfix\n\n";
+            echo "Or fix configuration:\n";
+            echo "  sudo bash /mail/fix-postfix.sh\n\n";
+            exit(1);
+        }
+    } else {
+        echo colorText("  ✓", 'green') . " Postfix is running\n\n";
+    }
 
     // Load configuration
     echo colorText("→", 'blue') . " Loading configuration...\n";

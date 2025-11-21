@@ -1,0 +1,236 @@
+====================================
+FIX: SMTP Connection Refused Error
+====================================
+
+Problem:
+--------
+Every time you close and reopen server access, sending emails fails with:
+
+"SMTP Error: Could not connect to SMTP host. Connection refused"
+
+This happens because Postfix stops running when you disconnect.
+
+====================================
+SOLUTION 1: Auto-Fix (Recommended)
+====================================
+
+The send.php script now automatically checks and starts Postfix!
+
+Just run:
+    php send.php
+
+If Postfix is stopped, it will:
+1. Detect the issue
+2. Automatically start Postfix
+3. Proceed with sending emails
+
+====================================
+SOLUTION 2: Manual Start
+====================================
+
+Before sending emails, run:
+
+    sudo bash /mail/start-email-server.sh
+
+This will:
+✓ Start Postfix if stopped
+✓ Start OpenDKIM if stopped
+✓ Enable auto-start on boot
+✓ Show service status
+
+====================================
+SOLUTION 3: Enable Auto-Start
+====================================
+
+Make Postfix start automatically:
+
+    sudo systemctl enable postfix
+    sudo systemctl enable opendkim
+    sudo systemctl start postfix
+    sudo systemctl start opendkim
+
+Or use the fix script:
+
+    sudo bash /mail/fix-postfix.sh
+
+This now enables auto-start by default!
+
+====================================
+SOLUTION 4: Check Status
+====================================
+
+Check if services are running:
+
+    sudo bash /mail/check-email-server.sh
+
+This shows:
+- Service status (running/stopped)
+- Configuration files
+- Health check results
+
+====================================
+SOLUTION 5: Full Diagnostics
+====================================
+
+Run comprehensive diagnostics:
+
+    sudo bash /mail/diagnose.sh
+
+This shows:
+- System information
+- Service status
+- Configuration files
+- Network ports
+- Recent logs
+- Recommendations
+
+====================================
+QUICK REFERENCE
+====================================
+
+Problem: Connection refused
+Quick fix: sudo bash /mail/start-email-server.sh
+
+Check status: sudo bash /mail/check-email-server.sh
+Diagnostics: sudo bash /mail/diagnose.sh
+Fix config:  sudo bash /mail/fix-postfix.sh
+
+====================================
+UNDERSTAND THE ISSUE
+====================================
+
+Why does Postfix stop?
+----------------------
+When you disconnect from the server, if Postfix
+is not enabled for auto-start, it stops running.
+
+Why doesn't it restart automatically?
+--------------------------------------
+Postfix needs to be "enabled" with systemctl.
+The old setup scripts didn't enable it.
+
+What's the permanent fix?
+--------------------------
+Run: sudo bash /mail/fix-postfix.sh
+
+This now:
+1. Fixes configuration
+2. Enables auto-start
+3. Starts services
+4. Verifies everything works
+
+====================================
+VERIFICATION
+====================================
+
+After fixing, verify services are enabled:
+
+    systemctl status postfix
+
+Should show:
+- Active: active (running)
+- Enabled: enabled
+
+If not enabled, run:
+
+    sudo systemctl enable postfix
+
+====================================
+TESTING
+====================================
+
+1. Start services:
+   sudo bash /mail/start-email-server.sh
+
+2. Check status:
+   sudo bash /mail/check-email-server.sh
+
+3. Send test email:
+   cd /var/email-server
+   php send.php
+
+4. Check logs:
+   tail -f /var/email-server/logs/email-log.txt
+
+====================================
+PREVENTING FUTURE ISSUES
+====================================
+
+Always use these scripts instead of manual commands:
+
+Good:
+✓ sudo bash /mail/fix-postfix.sh
+✓ sudo bash /mail/start-email-server.sh
+✓ php send.php (now auto-starts Postfix)
+
+Avoid:
+✗ systemctl restart postfix (doesn't enable)
+✗ service postfix restart (old method)
+
+====================================
+NEW FEATURES
+====================================
+
+1. send.php Auto-Check
+   - Automatically detects if Postfix is stopped
+   - Tries to start it
+   - Shows clear error if it can't
+
+2. start-email-server.sh
+   - Starts both Postfix and OpenDKIM
+   - Enables auto-start on boot
+   - Shows service status
+
+3. check-email-server.sh
+   - Health check for email server
+   - Shows what's working/broken
+   - Provides fix commands
+
+4. diagnose.sh
+   - Comprehensive diagnostics
+   - Shows system info
+   - Recent logs
+   - Recommendations
+
+5. Updated fix-postfix.sh
+   - Now enables auto-start
+   - More reliable
+   - Better error messages
+
+====================================
+WORKFLOW
+====================================
+
+Every time you connect to server:
+
+Option A (Automatic):
+1. Just run: php send.php
+   (It auto-checks Postfix)
+
+Option B (Manual):
+1. sudo bash /mail/start-email-server.sh
+2. php send.php
+
+Option C (Paranoid):
+1. sudo bash /mail/check-email-server.sh
+2. If issues: sudo bash /mail/fix-postfix.sh
+3. php send.php
+
+====================================
+SUMMARY
+====================================
+
+Problem: Postfix stops when you disconnect
+
+Solutions:
+1. Use new send.php (auto-fixes)
+2. Run start-email-server.sh before sending
+3. Run fix-postfix.sh to enable auto-start
+4. Enable manually: systemctl enable postfix
+
+Best practice:
+- Run fix-postfix.sh once
+- Services will stay running
+- send.php handles the rest
+
+====================================
