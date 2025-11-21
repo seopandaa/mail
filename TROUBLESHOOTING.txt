@@ -1,0 +1,390 @@
+====================================
+TROUBLESHOOTING GUIDE
+Common Email Server Issues & Solutions
+====================================
+
+====================================
+ISSUE 1: SMTP CONNECTION REFUSED
+====================================
+
+Error Message:
+"SMTP ERROR: Failed to connect to server: Connection refused (111)"
+
+Cause:
+Postfix service is not running or configuration files are not in correct location.
+
+Solution:
+
+Step 1: Check if Postfix is running
+systemctl status postfix
+
+If not running:
+systemctl start postfix
+
+Step 2: Check if configuration files are in place
+ls -l /etc/postfix/main.cf
+ls -l /etc/postfix/master.cf
+
+If missing, run the fix script:
+bash /mail/fix-postfix.sh
+
+Step 3: Verify Postfix can start
+postfix check
+systemctl restart postfix
+
+Step 4: Check logs
+tail -f /var/log/mail.log
+tail -f /var/log/postfix.log
+
+====================================
+ISSUE 2: CONFIGURATION FILES IN WRONG LOCATION
+====================================
+
+Problem:
+After migration, config files are in /var/email-server/config/ but
+Postfix needs them in /etc/postfix/
+
+Solution:
+
+Copy configuration files:
+cp /var/email-server/config/main.cf /etc/postfix/
+cp /var/email-server/config/master.cf /etc/postfix/
+cp /var/email-server/config/opendkim.conf /etc/opendkim.conf
+
+Copy OpenDKIM keys:
+cp /var/email-server/config/signing.table /etc/opendkim/
+cp /var/email-server/config/key.table /etc/opendkim/
+cp /var/email-server/config/trusted.hosts /etc/opendkim/
+
+Restart services:
+systemctl restart opendkim
+systemctl restart postfix
+
+Or use the automated fix script:
+bash /mail/fix-postfix.sh
+
+====================================
+ISSUE 3: DKIM KEYS MISSING
+====================================
+
+Error:
+OpenDKIM can't find keys or fails to start
+
+Solution:
+
+Generate new DKIM keys:
+mkdir -p /etc/opendkim/keys/fx.avameta.dev
+cd /etc/opendkim/keys/fx.avameta.dev
+opendkim-genkey -b 2048 -d fx.avameta.dev -D /etc/opendkim/keys/fx.avameta.dev -s mail -v
+
+Set permissions:
+chown -R opendkim:opendkim /etc/opendkim
+chmod 600 /etc/opendkim/keys/fx.avameta.dev/mail.private
+
+Get DNS record:
+cat /etc/opendkim/keys/fx.avameta.dev/mail.txt
+
+Add this to your DNS as TXT record for: mail._domainkey.fx.avameta.dev
+
+Restart:
+systemctl restart opendkim postfix
+
+====================================
+ISSUE 4: CRON JOB NOT RUNNING
+====================================
+
+Error:
+Automated emails not sending, warmup not running
+
+Check 1: Is cron installed?
+which crontab
+
+If not:
+apt-get update
+apt-get install -y cron
+systemctl enable cron
+systemctl start cron
+
+Check 2: Is cron job added?
+crontab -l
+
+Should show:
+*/5 * * * * /usr/bin/php /var/email-server/scripts/warmup-scheduler.php run >> /var/email-server/logs/cron.log 2>&1
+
+If missing, add it:
+crontab -e
+
+Or run:
+bash /mail/fix-cron.sh
+
+Check 3: Is cron service running?
+systemctl status cron
+
+If not:
+systemctl start cron
+
+Check 4: Check cron logs
+tail -f /var/email-server/logs/cron.log
+
+====================================
+ISSUE 5: EMAILS GOING TO SPAM
+====================================
+
+Possible Causes:
+1. DNS records not configured
+2. PTR record missing
+3. DKIM not signing
+4. SPF record missing
+5. DMARC record missing
+
+Solution:
+
+Step 1: Verify DNS records
+nslookup -type=mx fx.avameta.dev
+nslookup -type=txt fx.avameta.dev
+nslookup -type=txt mail._domainkey.fx.avameta.dev
+
+Step 2: Check PTR record
+host YOUR_SERVER_IP
+
+Should show: fx.avameta.dev
+
+If not, contact your VPS provider to set PTR record.
+
+Step 3: Test email authentication
+Send email to: check-auth@verifier.port25.com
+
+You'll receive a report showing:
+- SPF status
+- DKIM status
+- DMARC status
+
+Step 4: Use mail-tester.com
+Send email to: test-xxxxx@srv1.mail-tester.com
+Check your score (target: 8/10+)
+
+Step 5: Verify DKIM is signing
+Check mail headers of sent email, should contain:
+DKIM-Signature: v=1; a=rsa-sha256; d=fx.avameta.dev...
+
+====================================
+ISSUE 6: PERMISSION DENIED ERRORS
+====================================
+
+Error:
+Permission denied when accessing files or logs
+
+Solution:
+
+Set correct permissions:
+chown -R root:root /var/email-server
+chmod 755 /var/email-server
+chmod 755 /var/email-server/scripts
+chmod +x /var/email-server/scripts/*.php
+chmod 644 /var/email-server/config.json
+chmod 644 /var/email-server/letter.html
+chmod 755 /var/email-server/logs
+
+For OpenDKIM:
+chown -R opendkim:opendkim /etc/opendkim
+chmod 600 /etc/opendkim/keys/fx.avameta.dev/mail.private
+
+====================================
+ISSUE 7: PHP SCRIPTS NOT RUNNING
+====================================
+
+Error:
+php: command not found
+
+Solution:
+
+Install PHP:
+apt-get update
+apt-get install -y php-cli php-mbstring
+
+Verify:
+php --version
+
+Test script:
+php /var/email-server/scripts/test-email.php
+
+====================================
+ISSUE 8: COMPOSER/PHPMAILER MISSING
+====================================
+
+Error:
+Class 'PHPMailer\PHPMailer\PHPMailer' not found
+
+Solution:
+
+Check if vendor folder exists:
+ls -l /var/email-server/scripts/vendor/
+
+If missing, install:
+cd /var/email-server/scripts
+composer install --no-dev --optimize-autoloader
+
+If composer not installed:
+apt-get update
+apt-get install -y composer
+
+Then:
+cd /var/email-server/scripts
+composer install
+
+====================================
+ISSUE 9: PORT 25 BLOCKED
+====================================
+
+Error:
+Cannot connect to port 25, connection timeout
+
+Solution:
+
+Check if port is blocked by firewall:
+ufw status
+
+If active, allow port 25:
+ufw allow 25/tcp
+ufw allow 587/tcp
+ufw allow 465/tcp
+
+Check if VPS provider blocks port 25:
+telnet smtp.gmail.com 25
+
+If connection fails, contact your VPS provider.
+Some providers (AWS, Azure, GCP) block port 25 by default.
+
+====================================
+ISSUE 10: SERVICES NOT STARTING
+====================================
+
+Error:
+Postfix or OpenDKIM fails to start
+
+Postfix troubleshooting:
+systemctl status postfix -l
+journalctl -u postfix -n 50
+
+Check configuration:
+postfix check
+
+Check if port is already in use:
+netstat -tulpn | grep :25
+
+OpenDKIM troubleshooting:
+systemctl status opendkim -l
+journalctl -u opendkim -n 50
+
+Check configuration:
+opendkim-testkey -d fx.avameta.dev -s mail -vvv
+
+====================================
+DIAGNOSTIC COMMANDS
+====================================
+
+Service Status:
+systemctl status postfix
+systemctl status opendkim
+systemctl status cron
+
+Service Logs:
+journalctl -u postfix -f
+journalctl -u opendkim -f
+tail -f /var/log/mail.log
+tail -f /var/log/postfix.log
+
+Application Logs:
+tail -f /var/email-server/logs/email-log.txt
+tail -f /var/email-server/logs/warmup-scheduler.log
+tail -f /var/email-server/logs/cron.log
+
+Configuration Check:
+postfix check
+opendkim-testkey -d fx.avameta.dev -s mail -vvv
+
+DNS Check:
+nslookup -type=mx fx.avameta.dev
+nslookup -type=txt fx.avameta.dev
+nslookup -type=txt mail._domainkey.fx.avameta.dev
+host YOUR_SERVER_IP
+
+Port Check:
+netstat -tulpn | grep :25
+telnet localhost 25
+
+File Verification:
+ls -la /var/email-server/
+ls -la /var/email-server/scripts/
+ls -la /etc/postfix/
+ls -la /etc/opendkim/keys/fx.avameta.dev/
+
+Permission Check:
+ls -l /var/email-server/config.json
+ls -l /var/email-server/scripts/email-sender.php
+ls -l /etc/opendkim/keys/fx.avameta.dev/mail.private
+
+====================================
+QUICK FIX SCRIPTS
+====================================
+
+Fix Postfix Configuration:
+bash /mail/fix-postfix.sh
+
+Fix Cron Setup:
+bash /mail/fix-cron.sh
+
+Migrate Files to Correct Location:
+cd /mail
+bash migrate-to-var.sh
+
+====================================
+COMPLETE RESET (LAST RESORT)
+====================================
+
+If everything fails, reinstall:
+
+1. Backup current config:
+tar -czf /root/email-backup.tar.gz /var/email-server /etc/postfix /etc/opendkim
+
+2. Remove everything:
+apt-get remove --purge postfix opendkim
+rm -rf /var/email-server
+rm -rf /etc/postfix
+rm -rf /etc/opendkim
+
+3. Reinstall:
+cd /mail
+bash setup-server.sh
+
+4. Follow DEPLOYMENT-GUIDE.txt from scratch
+
+====================================
+GETTING HELP
+====================================
+
+When asking for help, provide:
+
+1. Error message (exact text)
+2. Service status: systemctl status postfix opendkim
+3. Recent logs: journalctl -u postfix -n 50
+4. Configuration check: postfix check
+5. File locations: ls -la /var/email-server/
+6. DNS records: nslookup -type=mx fx.avameta.dev
+
+====================================
+COMMON CAUSES SUMMARY
+====================================
+
+1. Service not running → systemctl start postfix
+2. Config files wrong location → bash fix-postfix.sh
+3. Missing DKIM keys → Generate new keys
+4. DNS not configured → Add DNS records
+5. Cron not installed → bash fix-cron.sh
+6. Port 25 blocked → Check firewall/VPS provider
+7. Permission issues → chown/chmod commands
+8. PHPMailer missing → composer install
+9. Wrong file paths → Check /var/email-server/
+10. Services misconfigured → postfix check
+
+====================================
