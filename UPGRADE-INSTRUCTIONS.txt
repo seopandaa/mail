@@ -1,0 +1,317 @@
+====================================
+UPGRADE INSTRUCTIONS
+From Basic Setup to Advanced Warmup System
+====================================
+
+If you already have the email server running from the initial setup,
+follow these instructions to add the warmup automation features.
+
+====================================
+WHAT'S NEW
+====================================
+
+✓ Centralized configuration system (config.json)
+✓ Customizable sender name, email, and reply-to
+✓ HTML email template with variable support (letter.html)
+✓ Recipient list management (warmup-list.txt)
+✓ Advanced bulk sending with rate limiting
+✓ Automated scheduling (5 emails per day at different times)
+✓ Random subject line rotation
+✓ Comprehensive logging system
+✓ Daily send limit tracking
+
+====================================
+UPGRADE STEPS
+====================================
+
+STEP 1: Upload New Files
+-------------------------
+
+From your local machine, upload these NEW files to your VPS:
+
+scp config.json letter.html warmup-list.txt email-sender.php warmup-scheduler.php setup-cron.sh root@YOUR_VPS_IP:/root/email-server-setup/
+
+STEP 2: Connect to VPS
+-----------------------
+
+ssh root@YOUR_VPS_IP
+cd /root/email-server-setup
+
+STEP 3: Run Upgrade Script
+---------------------------
+
+chmod +x setup-cron.sh
+sudo bash setup-cron.sh
+
+This automatically:
+- Installs new scripts to /var/email-server/scripts/
+- Copies configuration files
+- Sets up automated cron job
+- Creates log directory structure
+
+STEP 4: Configure Your Settings
+--------------------------------
+
+sudo nano /var/email-server/config.json
+
+Update these settings:
+1. sender_email: Your actual sending email
+2. sender_name: Your name or company name
+3. reply_to_email: Where replies should go
+4. send_times: When to send warmup emails
+5. subject_variations: Your subject lines
+
+STEP 5: Add Recipients
+-----------------------
+
+sudo nano /var/email-server/warmup-list.txt
+
+Add recipient emails (one per line):
+warmup1@example.com
+warmup2@example.com
+warmup3@example.com
+
+STEP 6: Customize Template (Optional)
+--------------------------------------
+
+sudo nano /var/email-server/letter.html
+
+Modify the email content as needed.
+Keep it simple without links for warmup.
+
+STEP 7: Test the System
+------------------------
+
+Test manual sending first:
+
+php /var/email-server/scripts/email-sender.php single \
+  "your-email@example.com" \
+  "Test Subject" \
+  "/var/email-server/letter.html"
+
+Check your email inbox to verify it works.
+
+STEP 8: Force Run Warmup Campaign
+----------------------------------
+
+php /var/email-server/scripts/warmup-scheduler.php force
+
+This sends to all emails in warmup-list.txt.
+Check the logs:
+
+tail -f /var/email-server/logs/email-log.txt
+
+STEP 9: Verify Automation
+--------------------------
+
+Check scheduler status:
+
+php /var/email-server/scripts/warmup-scheduler.php status
+
+Check cron job is installed:
+
+crontab -l
+
+You should see:
+*/5 * * * * /usr/bin/php /var/email-server/scripts/warmup-scheduler.php run >> /var/email-server/logs/cron.log 2>&1
+
+STEP 10: Monitor
+-----------------
+
+Watch the logs to ensure emails are being sent at scheduled times:
+
+tail -f /var/email-server/logs/warmup-scheduler.log
+
+====================================
+WHAT CHANGED
+====================================
+
+OLD SYSTEM:
+- test-email.php: Simple test script with hardcoded values
+- send-email.php: Command-line sending with manual parameters
+- No automation
+- No rate limiting
+- No logging
+- No template system
+
+NEW SYSTEM:
+- config.json: Centralized configuration
+- letter.html: Template with variables
+- warmup-list.txt: Managed recipient list
+- email-sender.php: Advanced sending with bulk support
+- warmup-scheduler.php: Automated scheduling system
+- Cron job: Runs every 5 minutes, checks schedule
+- Comprehensive logging: Tracks all activity
+- Rate limiting: Prevents sending too fast
+- Daily limits: Tracks sends per day
+
+====================================
+BACKWARDS COMPATIBILITY
+====================================
+
+Your old scripts still work!
+
+test-email.php:
+sudo php /var/email-server/scripts/test-email.php
+
+send-email.php:
+sudo php /var/email-server/scripts/send-email.php \
+  "recipient@example.com" "Name" "Subject" "<html>Body</html>"
+
+The new system adds features without removing old functionality.
+
+====================================
+NEW CAPABILITIES
+====================================
+
+1. Configuration Management
+---------------------------
+
+All settings in one place:
+/var/email-server/config.json
+
+No more hardcoded values in PHP files.
+
+2. Template System
+------------------
+
+HTML templates with variables:
+{{COMPANY_NAME}}
+{{SENDER_NAME}}
+{{SENDER_EMAIL}}
+{{RECIPIENT_EMAIL}}
+{{CURRENT_YEAR}}
+
+3. Bulk Sending
+---------------
+
+Send to entire list with one command:
+php /var/email-server/scripts/email-sender.php bulk list.txt template.html "Subject"
+
+4. Automated Warmup
+-------------------
+
+Set schedule and forget:
+- Runs automatically at specified times
+- Respects daily limits
+- Logs everything
+- Random subject rotation
+
+5. Rate Limiting
+----------------
+
+Prevents spam flags:
+- Delay between emails
+- Max per hour
+- Max per day
+
+6. Logging
+----------
+
+Track everything:
+- Every email sent
+- Failures and errors
+- Schedule execution
+- Daily statistics
+
+====================================
+DIRECTORY STRUCTURE AFTER UPGRADE
+====================================
+
+/var/email-server/
+├── config.json                    # NEW: Configuration
+├── letter.html                    # NEW: Email template
+├── warmup-list.txt               # NEW: Recipient list
+├── config/
+│   ├── main.cf
+│   ├── master.cf
+│   ├── opendkim.conf
+│   ├── signing.table
+│   ├── key.table
+│   └── trusted.hosts
+├── scripts/
+│   ├── vendor/
+│   ├── composer.json
+│   ├── test-email.php           # OLD: Still works
+│   ├── send-email.php           # OLD: Still works
+│   ├── email-sender.php         # NEW: Advanced sending
+│   └── warmup-scheduler.php     # NEW: Automation
+├── logs/                         # NEW: Log directory
+│   ├── email-log.txt            # Email activity log
+│   ├── warmup-scheduler.log     # Scheduler log
+│   ├── cron.log                 # Cron execution log
+│   └── warmup-state.json        # State tracking
+└── install.sh
+
+====================================
+VERIFICATION CHECKLIST
+====================================
+
+□ New files uploaded to VPS
+□ setup-cron.sh executed successfully
+□ config.json exists at /var/email-server/config.json
+□ letter.html exists at /var/email-server/letter.html
+□ warmup-list.txt exists and contains email addresses
+□ email-sender.php works (test single send)
+□ warmup-scheduler.php status shows correct info
+□ Cron job is installed (crontab -l)
+□ Logs directory exists: /var/email-server/logs/
+□ Manual warmup force run works
+□ Automated sending will trigger at scheduled times
+
+====================================
+TESTING PROCEDURE
+====================================
+
+1. Add your own email to warmup-list.txt
+2. Run: php /var/email-server/scripts/warmup-scheduler.php force
+3. Check your inbox for the email
+4. Verify log: tail -20 /var/email-server/logs/email-log.txt
+5. Check status: php /var/email-server/scripts/warmup-scheduler.php status
+6. Wait for scheduled time and verify automatic sending
+
+====================================
+ROLLBACK (IF NEEDED)
+====================================
+
+If you want to remove the automation:
+
+1. Disable in config:
+   sudo nano /var/email-server/config.json
+   Set "enabled": false
+
+2. Remove cron job:
+   crontab -e
+   Delete the warmup-scheduler line
+
+3. Keep using old scripts:
+   php /var/email-server/scripts/test-email.php
+   php /var/email-server/scripts/send-email.php
+
+====================================
+NEXT STEPS
+====================================
+
+1. Start with small recipient list (5-10 emails)
+2. Monitor logs for first few days
+3. Gradually increase recipient count
+4. Adjust send times to match your timezone
+5. Customize email template
+6. Add more subject variations
+7. Scale up to production volume
+
+====================================
+SUPPORT & DOCUMENTATION
+====================================
+
+For detailed usage instructions, see:
+WARMUP-GUIDE.txt
+
+For troubleshooting:
+1. Check logs in /var/email-server/logs/
+2. Verify cron is running: systemctl status cron
+3. Test manual sending first
+4. Ensure config.json is valid JSON
+5. Check recipient list format
+
+====================================

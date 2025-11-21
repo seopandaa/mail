@@ -1,0 +1,8 @@
+# Email Warmup List
+# Add one email address per line
+# Lines starting with # are comments and will be ignored
+# Example:
+# user1@example.com
+# user2@example.com
+
+# Add your warmup email addresses below:

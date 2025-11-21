@@ -1,0 +1,428 @@
+====================================
+EMAIL WARMUP & AUTOMATED SENDING GUIDE
+fx.avameta.dev
+====================================
+
+COMPLETE GUIDE FOR EMAIL WARMUP SYSTEM
+
+====================================
+NEW FILES ADDED
+====================================
+
+1. config.json
+   - Central configuration for all email settings
+   - Customize sender name, email, schedule, and rate limits
+
+2. letter.html
+   - Simple HTML email template without links
+   - Perfect for warmup campaigns
+   - Uses variable placeholders for personalization
+
+3. warmup-list.txt
+   - List of recipient emails for warmup campaign
+   - One email per line
+   - Lines starting with # are ignored (comments)
+
+4. email-sender.php
+   - Advanced email sending script with bulk capabilities
+   - Supports templates, variables, and rate limiting
+   - Automatic logging of all email activities
+
+5. warmup-scheduler.php
+   - Automated scheduling system
+   - Runs warmup campaigns at specified times
+   - Tracks daily send limits
+
+6. setup-cron.sh
+   - Automatic cron job setup script
+   - Configures automated email sending
+
+====================================
+STEP 1: UPLOAD NEW FILES TO VPS
+====================================
+
+From your LOCAL machine, upload the new files:
+
+scp config.json letter.html warmup-list.txt email-sender.php warmup-scheduler.php setup-cron.sh root@YOUR_VPS_IP:/root/email-server-setup/
+
+====================================
+STEP 2: CONNECT TO VPS
+====================================
+
+ssh root@YOUR_VPS_IP
+cd /root/email-server-setup
+
+====================================
+STEP 3: RUN SETUP
+====================================
+
+chmod +x setup-cron.sh
+sudo bash setup-cron.sh
+
+This will:
+- Copy all new files to /var/email-server/
+- Set up automated cron job (runs every 5 minutes)
+- Configure logging
+
+====================================
+STEP 4: CONFIGURE SETTINGS
+====================================
+
+Edit the configuration file:
+
+sudo nano /var/email-server/config.json
+
+Key settings to customize:
+
+A. Email Settings:
+   "sender_email": "noreply@fx.avameta.dev"      # Your sender email
+   "sender_name": "FX Avameta"                    # Your name/company
+   "reply_to_email": "support@fx.avameta.dev"    # Reply-to email
+
+B. Warmup Schedule:
+   "enabled": true                                # Enable/disable automation
+   "emails_per_day": 5                           # How many campaigns per day
+   "send_times": [                               # When to send (24-hour format)
+     "09:00",
+     "11:30",
+     "14:00",
+     "16:30",
+     "19:00"
+   ]
+
+C. Subject Variations:
+   "subject_variations": [
+     "Quick update for you",
+     "Just checking in",
+     "Hope you're doing well"
+   ]
+   "random_subject": true                        # Use random subjects
+
+D. Rate Limiting:
+   "max_emails_per_hour": 50                     # Max emails per hour
+   "delay_between_emails_seconds": 5             # Delay between each email
+   "max_daily_emails": 200                       # Total daily limit
+
+====================================
+STEP 5: ADD RECIPIENT EMAILS
+====================================
+
+Edit the warmup list:
+
+sudo nano /var/email-server/warmup-list.txt
+
+Add your warmup email addresses (one per line):
+
+user1@example.com
+user2@gmail.com
+user3@yahoo.com
+test@mydomain.com
+
+IMPORTANT: Start with a small list (5-10 emails) and gradually increase!
+
+====================================
+STEP 6: CUSTOMIZE EMAIL TEMPLATE
+====================================
+
+Edit the HTML template:
+
+sudo nano /var/email-server/letter.html
+
+Available variables you can use:
+- {{COMPANY_NAME}}      - Your company name
+- {{SENDER_NAME}}       - Sender's name
+- {{SENDER_EMAIL}}      - Sender's email
+- {{RECIPIENT_EMAIL}}   - Recipient's email
+- {{CURRENT_YEAR}}      - Current year
+
+The template is simple HTML without links (perfect for warmup).
+
+====================================
+MANUAL SENDING OPTIONS
+====================================
+
+1. Send Single Email:
+
+php /var/email-server/scripts/email-sender.php single \
+  "recipient@example.com" \
+  "Email Subject" \
+  "/var/email-server/letter.html"
+
+2. Send to Multiple Recipients (Bulk):
+
+php /var/email-server/scripts/email-sender.php bulk \
+  "/var/email-server/warmup-list.txt" \
+  "/var/email-server/letter.html" \
+  "Optional Subject"
+
+3. Run Warmup Campaign Manually:
+
+php /var/email-server/scripts/email-sender.php warmup
+
+====================================
+AUTOMATED SCHEDULING
+====================================
+
+The cron job runs every 5 minutes and checks:
+- Is it time to send? (matches scheduled times)
+- Haven't exceeded daily limit?
+- Is warmup enabled?
+
+If all conditions are met, it sends the warmup campaign automatically.
+
+Check Scheduler Status:
+
+php /var/email-server/scripts/warmup-scheduler.php status
+
+Output example:
+Enabled: Yes
+Runs today: 2 / 5
+Last run date: 2025-11-20
+Scheduled times: 09:00, 11:30, 14:00, 16:30, 19:00
+Next scheduled: 14:00
+
+Force Run (Ignore Schedule):
+
+php /var/email-server/scripts/warmup-scheduler.php force
+
+====================================
+MONITORING & LOGS
+====================================
+
+View Warmup Scheduler Log:
+
+tail -f /var/email-server/logs/warmup-scheduler.log
+
+View Email Sending Log:
+
+tail -f /var/email-server/logs/email-log.txt
+
+View Cron Execution Log:
+
+tail -f /var/email-server/logs/cron.log
+
+View All Logs Directory:
+
+ls -lh /var/email-server/logs/
+
+====================================
+TESTING THE SYSTEM
+====================================
+
+1. Add a test email to warmup-list.txt (your own email)
+
+2. Force run the campaign:
+
+php /var/email-server/scripts/warmup-scheduler.php force
+
+3. Check your inbox for the email
+
+4. Verify logs:
+
+tail -20 /var/email-server/logs/email-log.txt
+
+====================================
+WARMUP BEST PRACTICES
+====================================
+
+1. Start Small:
+   - Day 1-3: Send to 5-10 emails
+   - Day 4-7: Increase to 20-30 emails
+   - Week 2: Increase to 50-100 emails
+   - Week 3+: Scale to your target volume
+
+2. Gradual Increase:
+   - Don't jump from 10 to 1000 emails overnight
+   - Increase volume by 20-30% every few days
+
+3. Engagement:
+   - Use real email addresses that might reply
+   - Create engaging, natural content
+   - Vary subject lines (already configured!)
+
+4. Monitor Reputation:
+   - Check spam scores: mail-tester.com
+   - Monitor bounce rates
+   - Watch for spam complaints
+
+5. Timing:
+   - Spread sends throughout the day (configured)
+   - Avoid sending all at once
+   - Mimic human behavior
+
+====================================
+CUSTOMIZATION EXAMPLES
+====================================
+
+Example 1: Change Sender Name
+
+Edit /var/email-server/config.json:
+"sender_name": "John from FX Avameta"
+
+Example 2: Add More Send Times
+
+Edit /var/email-server/config.json:
+"send_times": [
+  "08:00",
+  "10:00",
+  "12:00",
+  "14:00",
+  "16:00",
+  "18:00",
+  "20:00"
+]
+"emails_per_day": 7
+
+Example 3: Create Custom Template
+
+cp /var/email-server/letter.html /var/email-server/letter-custom.html
+sudo nano /var/email-server/letter-custom.html
+
+Send with custom template:
+php /var/email-server/scripts/email-sender.php bulk \
+  "/var/email-server/warmup-list.txt" \
+  "/var/email-server/letter-custom.html" \
+  "Custom Subject"
+
+Example 4: Multiple Recipient Lists
+
+Create different lists:
+/var/email-server/warmup-list-1.txt
+/var/email-server/warmup-list-2.txt
+/var/email-server/customers-list.txt
+
+Send to specific list:
+php /var/email-server/scripts/email-sender.php bulk \
+  "/var/email-server/customers-list.txt" \
+  "/var/email-server/letter.html" \
+  "Newsletter Subject"
+
+====================================
+TROUBLESHOOTING
+====================================
+
+Issue: Emails not sending automatically
+
+Check cron is running:
+crontab -l
+systemctl status cron
+
+Check logs:
+tail -f /var/email-server/logs/cron.log
+
+Issue: Wrong send times
+
+Verify server timezone:
+date
+timedatectl
+
+Set timezone if needed:
+timedatectl set-timezone America/New_York
+
+Issue: Emails going to spam
+
+1. Verify DNS records (SPF, DKIM, DMARC)
+2. Check mail-tester.com score
+3. Reduce sending volume
+4. Improve email content
+5. Ensure PTR record is set
+
+Issue: Can't find recipients
+
+Check file path and permissions:
+ls -l /var/email-server/warmup-list.txt
+cat /var/email-server/warmup-list.txt
+
+Ensure proper format (one email per line).
+
+====================================
+STOPPING AUTOMATION
+====================================
+
+Temporarily disable (keeps cron job):
+
+Edit /var/email-server/config.json:
+"enabled": false
+
+Permanently remove cron job:
+
+crontab -e
+(Delete the line with warmup-scheduler.php)
+
+Or:
+crontab -r  # Removes all cron jobs for root user
+
+====================================
+ADVANCED: MULTIPLE WARMUP CAMPAIGNS
+====================================
+
+You can set up multiple campaigns with different configs:
+
+1. Create config-campaign2.json
+2. Create letter-campaign2.html
+3. Create list-campaign2.txt
+4. Add separate cron job:
+
+0 10,15,20 * * * /usr/bin/php /var/email-server/scripts/email-sender.php bulk /var/email-server/list-campaign2.txt /var/email-server/letter-campaign2.html "Subject"
+
+====================================
+FILE LOCATIONS REFERENCE
+====================================
+
+Configuration:
+/var/email-server/config.json
+
+Templates:
+/var/email-server/letter.html
+
+Recipient Lists:
+/var/email-server/warmup-list.txt
+
+Scripts:
+/var/email-server/scripts/email-sender.php
+/var/email-server/scripts/warmup-scheduler.php
+
+Logs:
+/var/email-server/logs/warmup-scheduler.log
+/var/email-server/logs/email-log.txt
+/var/email-server/logs/cron.log
+/var/email-server/logs/warmup-state.json
+
+====================================
+QUICK COMMAND REFERENCE
+====================================
+
+# Configuration
+sudo nano /var/email-server/config.json
+sudo nano /var/email-server/warmup-list.txt
+sudo nano /var/email-server/letter.html
+
+# Manual sending
+php /var/email-server/scripts/email-sender.php warmup
+php /var/email-server/scripts/warmup-scheduler.php force
+
+# Status & monitoring
+php /var/email-server/scripts/warmup-scheduler.php status
+tail -f /var/email-server/logs/email-log.txt
+tail -f /var/email-server/logs/warmup-scheduler.log
+
+# Cron management
+crontab -l                    # List cron jobs
+crontab -e                    # Edit cron jobs
+systemctl status cron         # Check cron service
+
+# Testing
+php /var/email-server/scripts/email-sender.php single test@example.com "Test" /var/email-server/letter.html
+
+====================================
+SUPPORT
+====================================
+
+For issues:
+1. Check logs for error messages
+2. Verify configuration syntax (valid JSON)
+3. Ensure recipient list is properly formatted
+4. Test manual sending first
+5. Verify cron job is running
+
+====================================

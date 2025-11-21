@@ -1,8 +1,10 @@
 # Production Email Server Setup for fx.avameta.dev
 
-Complete, production-ready email server configuration using Postfix, OpenDKIM, and PHPMailer.
+Complete, production-ready email server with automated warmup system using Postfix, OpenDKIM, and PHPMailer.
 
 ## Quick Start
+
+### Initial Setup
 
 ```bash
 # 1. Upload all files to your VPS
@@ -15,9 +17,9 @@ ssh root@YOUR_VPS_IP
 cd /root/email-server-setup
 
 # 4. Make scripts executable
-chmod +x setup-server.sh install.sh
+chmod +x setup-server.sh install.sh setup-cron.sh
 
-# 5. Run setup
+# 5. Run initial setup
 sudo bash setup-server.sh
 
 # 6. Get DKIM key for DNS
@@ -25,32 +27,89 @@ sudo cat /etc/opendkim/keys/fx.avameta.dev/mail.txt
 
 # 7. Configure DNS records (see DNS-RECORDS.txt)
 
-# 8. Test email
+# 8. Test basic email
 sudo php /var/email-server/scripts/test-email.php
+```
+
+### Warmup System Setup
+
+```bash
+# 1. Install warmup automation
+sudo bash setup-cron.sh
+
+# 2. Configure settings
+sudo nano /var/email-server/config.json
+
+# 3. Add recipient emails
+sudo nano /var/email-server/warmup-list.txt
+
+# 4. Test warmup campaign
+php /var/email-server/scripts/warmup-scheduler.php force
+
+# 5. Check status
+php /var/email-server/scripts/warmup-scheduler.php status
 ```
 
 ## What's Included
 
+### Core Email Server
 - **Postfix Configuration**: Complete MTA setup with security restrictions
 - **OpenDKIM**: DKIM signing for email authentication
 - **PHPMailer**: Library for sending emails via PHP
-- **Test Scripts**: Verify your setup works correctly
 - **DNS Templates**: Exact DNS records to configure
-- **Documentation**: Complete deployment and troubleshooting guides
+
+### Warmup & Automation System
+- **Automated Scheduling**: Send warmup emails 5 times per day
+- **Configuration Management**: Centralized settings in config.json
+- **Template System**: HTML templates with variable support
+- **Recipient Management**: Easy-to-manage email lists
+- **Rate Limiting**: Prevent spam flags with controlled sending
+- **Comprehensive Logging**: Track all email activity
+- **Bulk Sending**: Send to multiple recipients efficiently
+
+### Documentation
+- **DEPLOYMENT-GUIDE.txt**: Initial server setup
+- **WARMUP-GUIDE.txt**: Complete warmup system guide
+- **UPGRADE-INSTRUCTIONS.txt**: Upgrade from basic to advanced
+- **DNS-RECORDS.txt**: DNS configuration
+- **CHANGES-SUMMARY.txt**: What's new in this version
 
 ## Files Overview
 
+### Setup Scripts
 | File | Purpose |
 |------|---------|
-| `setup-server.sh` | Main deployment script - runs everything |
-| `install.sh` | Package installation and service configuration |
+| `setup-server.sh` | Initial email server deployment |
+| `setup-cron.sh` | Warmup automation setup |
+| `install.sh` | Package installation |
+
+### Configuration Files
+| File | Purpose |
+|------|---------|
+| `config.json` | Centralized settings (sender, schedule, limits) |
 | `main.cf` | Postfix main configuration |
 | `master.cf` | Postfix service definitions |
 | `opendkim.conf` | OpenDKIM configuration |
-| `test-email.php` | Test email sending |
-| `send-email.php` | Production email script |
-| `DNS-RECORDS.txt` | DNS configuration values |
-| `DEPLOYMENT-GUIDE.txt` | Step-by-step deployment instructions |
+| `letter.html` | Email template for warmup |
+| `warmup-list.txt` | Recipient email list |
+
+### PHP Scripts
+| File | Purpose |
+|------|---------|
+| `test-email.php` | Simple email test |
+| `send-email.php` | Basic email sending |
+| `email-sender.php` | Advanced bulk sender with templates |
+| `warmup-scheduler.php` | Automated warmup scheduler |
+
+### Documentation
+| File | Purpose |
+|------|---------|
+| `README.md` | This file - quick start guide |
+| `DEPLOYMENT-GUIDE.txt` | Complete deployment steps |
+| `WARMUP-GUIDE.txt` | Warmup system documentation |
+| `UPGRADE-INSTRUCTIONS.txt` | Upgrade guide |
+| `CHANGES-SUMMARY.txt` | What's new |
+| `DNS-RECORDS.txt` | DNS configuration |
 
 ## Requirements
 
@@ -71,18 +130,52 @@ After running setup, you must:
 
 ## Sending Emails
 
+### Basic Methods
+
 **Test Email:**
 ```bash
 sudo php /var/email-server/scripts/test-email.php
 ```
 
-**Custom Email:**
+**Single Email:**
 ```bash
-sudo php /var/email-server/scripts/send-email.php \
+php /var/email-server/scripts/email-sender.php single \
   "recipient@example.com" \
-  "Recipient Name" \
   "Subject Line" \
-  "<h1>Hello</h1><p>Email body</p>"
+  "/var/email-server/letter.html"
+```
+
+### Bulk Sending
+
+**Send to Email List:**
+```bash
+php /var/email-server/scripts/email-sender.php bulk \
+  "/var/email-server/warmup-list.txt" \
+  "/var/email-server/letter.html" \
+  "Optional Subject"
+```
+
+**Warmup Campaign:**
+```bash
+php /var/email-server/scripts/email-sender.php warmup
+```
+
+### Automated Warmup
+
+**Check Status:**
+```bash
+php /var/email-server/scripts/warmup-scheduler.php status
+```
+
+**Force Run:**
+```bash
+php /var/email-server/scripts/warmup-scheduler.php force
+```
+
+**View Logs:**
+```bash
+tail -f /var/email-server/logs/email-log.txt
+tail -f /var/email-server/logs/warmup-scheduler.log
 ```
 
 ## Testing Deliverability
@@ -145,17 +238,45 @@ sudo apt update && sudo apt upgrade -y
 
 ## File Locations
 
+- **Configuration**: `/var/email-server/config.json`
+- **Email Template**: `/var/email-server/letter.html`
+- **Recipient List**: `/var/email-server/warmup-list.txt`
 - **Scripts**: `/var/email-server/scripts/`
-- **Config**: `/var/email-server/config/`
+- **Logs**: `/var/email-server/logs/`
 - **DKIM Keys**: `/etc/opendkim/keys/fx.avameta.dev/`
 - **Postfix Config**: `/etc/postfix/`
-- **Logs**: `/var/log/postfix.log`
 
-## Documentation
+## Key Features
 
-- `DEPLOYMENT-GUIDE.txt` - Complete step-by-step deployment
-- `DNS-RECORDS.txt` - DNS configuration details
-- `DIRECTORY-STRUCTURE.txt` - File system layout
+### Automated Warmup System
+- Runs 5 times per day at scheduled intervals
+- Configurable send times (default: 9am, 11:30am, 2pm, 4:30pm, 7pm)
+- Random subject line rotation
+- Rate limiting to prevent spam flags
+- Daily send tracking
+
+### Easy Configuration
+Edit `/var/email-server/config.json`:
+- Sender name and email
+- Reply-to address
+- Send schedule and frequency
+- Subject line variations
+- Rate limits
+
+### Comprehensive Logging
+- Email sending log: `/var/email-server/logs/email-log.txt`
+- Scheduler log: `/var/email-server/logs/warmup-scheduler.log`
+- Cron execution log: `/var/email-server/logs/cron.log`
+
+## Complete Documentation
+
+For detailed guides, see these files:
+- **WARMUP-GUIDE.txt** - Complete warmup system documentation
+- **UPGRADE-INSTRUCTIONS.txt** - How to upgrade existing setup
+- **DEPLOYMENT-GUIDE.txt** - Initial server deployment
+- **CHANGES-SUMMARY.txt** - What's new in this version
+- **DNS-RECORDS.txt** - DNS configuration
+- **DIRECTORY-STRUCTURE.txt** - File system layout
 
 ## Support
 
