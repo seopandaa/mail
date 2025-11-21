@@ -1,0 +1,402 @@
+====================================
+MIGRATION GUIDE
+Centralizing Files to /var/email-server
+====================================
+
+If you uploaded files to your mail root folder (like /root/Mailweb) instead
+of /var/email-server, this guide will help you centralize everything.
+
+====================================
+THE PROBLEM
+====================================
+
+Files are scattered in different locations:
+- Some files in: /root/Mailweb (or another directory)
+- Some files in: /var/email-server/
+- Scripts looking for files in /var/email-server/
+
+Result: Path errors, scripts can't find files.
+
+====================================
+THE SOLUTION
+====================================
+
+We'll centralize EVERYTHING in /var/email-server/ using an automated
+migration script that:
+1. Copies all files to correct locations
+2. Updates all paths
+3. Sets proper permissions
+4. Updates cron job
+5. Creates backup (just in case)
+
+====================================
+STEP 1: UPLOAD MIGRATION SCRIPT
+====================================
+
+From your local machine, upload the migration script:
+
+scp migrate-to-var.sh root@YOUR_VPS_IP:/root/
+
+Or if you're already on the VPS and files are in another folder:
+
+cp /path/to/your/files/migrate-to-var.sh /root/
+
+====================================
+STEP 2: GO TO YOUR FILE LOCATION
+====================================
+
+Navigate to where you uploaded your email server files:
+
+cd /root/Mailweb
+# OR wherever your files are located
+
+Example locations:
+- cd /root/Mailweb
+- cd /root/email-server-setup
+- cd /home/user/email-files
+
+====================================
+STEP 3: RUN MIGRATION SCRIPT
+====================================
+
+Make the script executable:
+
+chmod +x migrate-to-var.sh
+
+Run the migration:
+
+sudo bash migrate-to-var.sh
+
+The script will:
+✓ Create backup at /root/email-server-backup-[timestamp]
+✓ Copy all files to /var/email-server/
+✓ Install PHPMailer if needed
+✓ Set correct permissions
+✓ Update cron job with correct paths
+✓ Verify everything is in place
+
+====================================
+STEP 4: VERIFY MIGRATION
+====================================
+
+Check that files are in correct locations:
+
+ls -lh /var/email-server/
+
+You should see:
+config.json
+letter.html
+warmup-list.txt
+config/
+scripts/
+logs/
+
+Check scripts directory:
+
+ls -lh /var/email-server/scripts/
+
+You should see:
+email-sender.php
+warmup-scheduler.php
+test-email.php
+send-email.php
+composer.json
+vendor/
+
+====================================
+STEP 5: TEST EVERYTHING
+====================================
+
+1. Check Configuration:
+
+cat /var/email-server/config.json
+
+2. Test Single Email:
+
+php /var/email-server/scripts/email-sender.php single \
+  "your-email@example.com" \
+  "Test Subject" \
+  "/var/email-server/letter.html"
+
+3. Check Scheduler Status:
+
+php /var/email-server/scripts/warmup-scheduler.php status
+
+4. Force Run Warmup (Test):
+
+php /var/email-server/scripts/warmup-scheduler.php force
+
+5. Check Logs:
+
+tail -f /var/email-server/logs/email-log.txt
+
+6. Verify Cron Job:
+
+crontab -l
+
+Should show:
+*/5 * * * * /usr/bin/php /var/email-server/scripts/warmup-scheduler.php run >> /var/email-server/logs/cron.log 2>&1
+
+====================================
+STEP 6: CONFIGURE & CUSTOMIZE
+====================================
+
+Now edit your configuration:
+
+1. Edit sender settings:
+
+sudo nano /var/email-server/config.json
+
+Update:
+- sender_email
+- sender_name
+- reply_to_email
+- send_times (adjust to your timezone)
+
+2. Add recipient emails:
+
+sudo nano /var/email-server/warmup-list.txt
+
+Add one email per line:
+test1@example.com
+test2@example.com
+
+3. Customize email template (optional):
+
+sudo nano /var/email-server/letter.html
+
+====================================
+WHAT THE MIGRATION SCRIPT DOES
+====================================
+
+Detailed actions:
+
+1. Creates Backup
+   - Backs up existing /var/email-server/ to /root/email-server-backup-[date]
+   - Safe to rollback if needed
+
+2. Creates Directory Structure
+   /var/email-server/
+   ├── config/          (Postfix/OpenDKIM configs)
+   ├── scripts/         (PHP scripts)
+   ├── logs/            (All logs)
+   └── keys/            (Reserved for future use)
+
+3. Copies Configuration Files
+   - config.json → /var/email-server/
+   - letter.html → /var/email-server/
+   - warmup-list.txt → /var/email-server/
+   - main.cf, master.cf, etc. → /var/email-server/config/
+
+4. Copies PHP Scripts
+   - email-sender.php → /var/email-server/scripts/
+   - warmup-scheduler.php → /var/email-server/scripts/
+   - test-email.php → /var/email-server/scripts/
+   - send-email.php → /var/email-server/scripts/
+
+5. Installs Dependencies
+   - Installs PHPMailer via Composer
+   - Or copies existing vendor/ folder
+
+6. Sets Permissions
+   - Makes scripts executable
+   - Sets proper ownership (root:root)
+   - Secures configuration files
+
+7. Updates Cron Job
+   - Removes old cron entries for warmup-scheduler
+   - Adds new cron with correct paths
+   - Runs every 5 minutes
+
+8. Verifies Everything
+   - Checks all critical files exist
+   - Reports any missing files
+
+====================================
+FILE LOCATIONS AFTER MIGRATION
+====================================
+
+Main Configuration:
+/var/email-server/config.json         - Email settings, schedule, limits
+/var/email-server/letter.html         - Email template
+/var/email-server/warmup-list.txt     - Recipient list
+
+Postfix/OpenDKIM Configs:
+/var/email-server/config/main.cf
+/var/email-server/config/master.cf
+/var/email-server/config/opendkim.conf
+/var/email-server/config/signing.table
+/var/email-server/config/key.table
+/var/email-server/config/trusted.hosts
+
+PHP Scripts:
+/var/email-server/scripts/email-sender.php
+/var/email-server/scripts/warmup-scheduler.php
+/var/email-server/scripts/test-email.php
+/var/email-server/scripts/send-email.php
+/var/email-server/scripts/composer.json
+/var/email-server/scripts/vendor/          (PHPMailer)
+
+Logs:
+/var/email-server/logs/email-log.txt
+/var/email-server/logs/warmup-scheduler.log
+/var/email-server/logs/cron.log
+/var/email-server/logs/warmup-state.json
+
+====================================
+ORIGINAL FILES - WHAT TO DO?
+====================================
+
+After successful migration, your original files are still in the
+upload location (e.g., /root/Mailweb).
+
+Options:
+
+1. Keep as backup:
+   - Leave them there as additional backup
+   - They won't interfere with operations
+
+2. Delete to save space:
+   cd /root/Mailweb  # or your upload location
+   ls -la            # verify you're in correct location
+   cd ..
+   rm -rf Mailweb    # delete after confirming migration works
+
+3. Create archive:
+   cd /root
+   tar -czf mailweb-backup.tar.gz Mailweb
+   rm -rf Mailweb
+
+====================================
+TROUBLESHOOTING
+====================================
+
+Issue: "Permission denied"
+Solution: Make sure you're running as root (use sudo)
+
+Issue: "Composer not found"
+Solution: The script will try to copy existing vendor/ folder instead
+
+Issue: "File not found" errors when testing
+Solution:
+1. Check file exists: ls -l /var/email-server/config.json
+2. Check permissions: ls -l /var/email-server/scripts/
+3. Re-run migration script
+
+Issue: Emails not sending
+Solution:
+1. Check Postfix is running: systemctl status postfix
+2. Check logs: tail -f /var/log/postfix.log
+3. Test basic email: php /var/email-server/scripts/test-email.php
+
+Issue: Cron not working
+Solution:
+1. Check cron service: systemctl status cron
+2. Check cron job: crontab -l
+3. Check cron log: tail -f /var/email-server/logs/cron.log
+4. Re-run migration to update cron
+
+====================================
+ROLLBACK (IF NEEDED)
+====================================
+
+If something goes wrong, you can rollback:
+
+1. Your original files are still in upload location
+2. Backup was created at: /root/email-server-backup-[timestamp]
+
+To restore from backup:
+
+rm -rf /var/email-server
+cp -r /root/email-server-backup-[timestamp]/email-server /var/
+systemctl restart postfix opendkim
+
+====================================
+VALIDATION CHECKLIST
+====================================
+
+After migration, verify these:
+
+□ config.json exists at /var/email-server/
+□ letter.html exists at /var/email-server/
+□ warmup-list.txt exists and has email addresses
+□ Scripts exist in /var/email-server/scripts/
+□ vendor/autoload.php exists (PHPMailer)
+□ Logs directory exists: /var/email-server/logs/
+□ Cron job has correct paths (crontab -l)
+□ Single email test works
+□ Warmup scheduler status works
+□ Force run warmup works
+□ Logs are being created
+
+====================================
+COMMON SCENARIOS
+====================================
+
+Scenario 1: Files in /root/Mailweb
+
+cd /root/Mailweb
+sudo bash migrate-to-var.sh
+
+Scenario 2: Files in /home/user/email-server
+
+cd /home/user/email-server
+sudo bash migrate-to-var.sh
+
+Scenario 3: Files in /root/email-server-setup
+
+cd /root/email-server-setup
+sudo bash migrate-to-var.sh
+
+The script works from ANY location!
+
+====================================
+AFTER MIGRATION - USAGE
+====================================
+
+From now on, use these commands:
+
+Edit Configuration:
+sudo nano /var/email-server/config.json
+
+Edit Recipient List:
+sudo nano /var/email-server/warmup-list.txt
+
+Send Test Email:
+php /var/email-server/scripts/email-sender.php single \
+  email@example.com "Subject" /var/email-server/letter.html
+
+Send Bulk Campaign:
+php /var/email-server/scripts/email-sender.php bulk \
+  /var/email-server/warmup-list.txt \
+  /var/email-server/letter.html \
+  "Optional Subject"
+
+Run Warmup:
+php /var/email-server/scripts/warmup-scheduler.php force
+
+Check Status:
+php /var/email-server/scripts/warmup-scheduler.php status
+
+View Logs:
+tail -f /var/email-server/logs/email-log.txt
+tail -f /var/email-server/logs/warmup-scheduler.log
+
+====================================
+NEED HELP?
+====================================
+
+If migration fails or you need assistance:
+
+1. Check the backup was created:
+   ls -la /root/email-server-backup-*
+
+2. Check what files are in /var/email-server/:
+   find /var/email-server/ -type f
+
+3. Check permissions:
+   ls -laR /var/email-server/
+
+4. Re-run the migration script - it's safe to run multiple times
+
+====================================
