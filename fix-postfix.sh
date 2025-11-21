@@ -101,13 +101,48 @@ systemctl status postfix --no-pager -l
 
 echo ""
 echo "======================================"
-echo "Configuration Complete!"
+echo "Verifying Port 25"
+echo "======================================"
+
+sleep 2  # Give Postfix time to bind
+
+if netstat -tuln 2>/dev/null | grep -q ":25 " || ss -tuln 2>/dev/null | grep -q ":25 "; then
+    echo "  ✓ Port 25 is listening - Postfix is working!"
+    PORT_OK=1
+else
+    echo "  ✗ Port 25 is NOT listening - Postfix may have issues"
+    echo ""
+    echo "Checking for errors:"
+    tail -20 /var/log/mail.log 2>/dev/null | grep -i error || echo "  No errors in mail.log"
+    echo ""
+    echo "Try running: postfix check"
+    PORT_OK=0
+fi
+
+echo ""
+echo "======================================"
+if [ $PORT_OK -eq 1 ]; then
+    echo "Configuration Complete! ✓"
+else
+    echo "Configuration Complete with Warnings!"
+fi
 echo "======================================"
 echo ""
-echo "Test your email server:"
-echo "  php /var/email-server/scripts/test-email.php"
-echo ""
-echo "Check logs if issues persist:"
-echo "  tail -f /var/log/mail.log"
-echo "  tail -f /var/log/postfix.log"
+if [ $PORT_OK -eq 1 ]; then
+    echo "Email server is ready to use!"
+    echo ""
+    echo "Test your email server:"
+    echo "  php /var/email-server/scripts/test-email.php"
+    echo ""
+    echo "Or send bulk emails:"
+    echo "  cd /var/email-server"
+    echo "  php send.php"
+else
+    echo "⚠ Port 25 is not listening. Check logs:"
+    echo "  tail -f /var/log/mail.log"
+    echo "  journalctl -u postfix -f"
+    echo ""
+    echo "Check Postfix configuration:"
+    echo "  postfix check"
+fi
 echo ""

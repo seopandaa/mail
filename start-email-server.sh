@@ -57,6 +57,25 @@ systemctl enable opendkim >/dev/null 2>&1
 echo "  ✓ Services enabled"
 
 echo ""
+echo "[4/4] Verifying Postfix is listening on port 25..."
+
+sleep 2  # Give Postfix time to bind to port
+
+if netstat -tuln 2>/dev/null | grep -q ":25 " || ss -tuln 2>/dev/null | grep -q ":25 "; then
+    echo "  ✓ Port 25 is listening"
+    PORT_OK=1
+else
+    echo "  ✗ Port 25 is NOT listening"
+    echo ""
+    echo "Checking Postfix status:"
+    systemctl status postfix --no-pager -l
+    echo ""
+    echo "Checking mail logs:"
+    tail -20 /var/log/mail.log 2>/dev/null || journalctl -u postfix -n 20 --no-pager
+    PORT_OK=0
+fi
+
+echo ""
 echo "======================================"
 echo "Service Status"
 echo "======================================"
@@ -70,14 +89,32 @@ echo "OpenDKIM:"
 systemctl status opendkim --no-pager | head -3
 
 echo ""
-echo "======================================"
-echo "Email Server is Ready!"
-echo "======================================"
+echo "Network Status:"
+echo "Port 25 (SMTP): $(if [ $PORT_OK -eq 1 ]; then echo "Listening ✓"; else echo "Not listening ✗"; fi)"
+
 echo ""
-echo "Test with:"
-echo "  php /var/email-server/scripts/test-email.php"
-echo ""
-echo "Or send bulk emails:"
-echo "  cd /var/email-server"
-echo "  php send.php"
+echo "======================================"
+if [ $PORT_OK -eq 1 ]; then
+    echo "Email Server is Ready!"
+    echo "======================================"
+    echo ""
+    echo "Test with:"
+    echo "  php /var/email-server/scripts/test-email.php"
+    echo ""
+    echo "Or send bulk emails:"
+    echo "  cd /var/email-server"
+    echo "  php send.php"
+else
+    echo "Email Server Has Issues!"
+    echo "======================================"
+    echo ""
+    echo "Port 25 is not listening. Fix with:"
+    echo "  sudo bash /mail/fix-postfix.sh"
+    echo ""
+    echo "Check configuration:"
+    echo "  postfix check"
+    echo ""
+    echo "View logs:"
+    echo "  tail -f /var/log/mail.log"
+fi
 echo ""
