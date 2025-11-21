@@ -1,0 +1,308 @@
+====================================
+SIMPLE USAGE GUIDE
+====================================
+
+Want to send bulk emails? Just run:
+
+    php send.php
+
+
+That's it! Super simple.
+
+====================================
+SETUP (One-time)
+====================================
+
+1. Add Recipients
+   -------------
+   Edit the file:
+   nano /var/email-server/email-list.txt
+
+   Add one email per line:
+   john@example.com
+   sarah@gmail.com
+   mike@yahoo.com
+
+
+2. Edit Email Template
+   -------------------
+   Edit the file:
+   nano /var/email-server/letter.html
+
+   Use these variables:
+   {{COMPANY_NAME}}    - Your company name
+   {{SENDER_NAME}}     - Sender name
+   {{RECIPIENT_EMAIL}} - Recipient's email
+   {{CURRENT_YEAR}}    - Current year
+
+
+3. Configure Settings
+   ------------------
+   Edit the file:
+   nano /var/email-server/config.json
+
+   Key settings:
+   - sender_email: Your from email
+   - sender_name: Your from name
+   - delay_between_emails_seconds: Wait time (default: 5)
+   - subject_variations: Array of subject lines
+
+
+====================================
+SEND EMAILS
+====================================
+
+Run this command:
+
+    php send.php
+
+The script will:
+✓ Load recipients from email-list.txt
+✓ Load template from letter.html
+✓ Load settings from config.json
+✓ Show you a summary
+✓ Ask for confirmation
+✓ Send all emails with delays
+✓ Show progress for each email
+✓ Display final results
+✓ Save logs
+
+====================================
+EXAMPLE OUTPUT
+====================================
+
+====================================
+   Simple Email Sender
+====================================
+
+→ Loading configuration...
+  ✓ Config loaded
+
+→ Loading recipients from: email-list.txt
+  ✓ Found 5 recipients
+
+→ Loading email template: letter.html
+  ✓ Template loaded
+
+====================================
+Settings:
+  • From: FX Avameta <noreply@fx.avameta.dev>
+  • Recipients: 5
+  • Delay: 5 seconds between emails
+  • Random subjects: Yes
+====================================
+
+Ready to send 5 emails.
+Press ENTER to continue or CTRL+C to cancel...
+
+→ Starting to send emails...
+
+[1/5] Sending to: john@example.com ... ✓ Sent
+[2/5] Sending to: sarah@gmail.com ... ✓ Sent
+[3/5] Sending to: mike@yahoo.com ... ✓ Sent
+[4/5] Sending to: anna@outlook.com ... ✓ Sent
+[5/5] Sending to: david@proton.me ... ✓ Sent
+
+====================================
+   Campaign Complete!
+====================================
+Sent:   5
+Total:  5
+====================================
+
+====================================
+FILE LOCATIONS
+====================================
+
+Recipients:  /var/email-server/email-list.txt
+Template:    /var/email-server/letter.html
+Config:      /var/email-server/config.json
+Script:      /var/email-server/send.php
+Logs:        /var/email-server/logs/email-log.txt
+
+====================================
+ADVANCED: CONFIGURATION OPTIONS
+====================================
+
+config.json settings:
+
+{
+  "email_settings": {
+    "sender_email": "noreply@fx.avameta.dev",
+    "sender_name": "FX Avameta",
+    "reply_to_email": "support@fx.avameta.dev",
+    "reply_to_name": "Support Team"
+  },
+  "warmup_schedule": {
+    "subject_variations": [
+      "Quick update for you",
+      "Just checking in",
+      "Hope you're doing well"
+    ],
+    "random_subject": true
+  },
+  "rate_limiting": {
+    "delay_between_emails_seconds": 5
+  }
+}
+
+Key options:
+- sender_email: From address
+- sender_name: From name
+- reply_to_email: Reply address
+- subject_variations: List of subjects
+- random_subject: Use random subject (true/false)
+- delay_between_emails_seconds: Wait between sends
+
+====================================
+TEMPLATE VARIABLES
+====================================
+
+Available variables for letter.html:
+
+{{COMPANY_NAME}}     Your company name
+{{SENDER_NAME}}      Sender's name
+{{SENDER_EMAIL}}     Sender's email
+{{RECIPIENT_EMAIL}}  Recipient's email
+{{CURRENT_YEAR}}     Current year (2025)
+
+Example template:
+
+<!DOCTYPE html>
+<html>
+<body>
+  <h1>Hello!</h1>
+  <p>This is a message from {{COMPANY_NAME}}.</p>
+  <p>You're receiving this at {{RECIPIENT_EMAIL}}.</p>
+  <hr>
+  <p>Best regards,<br>
+  {{SENDER_NAME}}<br>
+  {{SENDER_EMAIL}}</p>
+  <p>&copy; {{CURRENT_YEAR}} {{COMPANY_NAME}}</p>
+</body>
+</html>
+
+====================================
+MONITORING
+====================================
+
+View sending logs:
+tail -f /var/email-server/logs/email-log.txt
+
+Check last 20 lines:
+tail -20 /var/email-server/logs/email-log.txt
+
+Search for errors:
+grep ERROR /var/email-server/logs/email-log.txt
+
+====================================
+TIPS
+====================================
+
+1. Test First
+   Add just 1-2 emails to email-list.txt
+   Run: php send.php
+   Verify emails arrive correctly
+
+2. Start Small
+   Send to 5-10 recipients first
+   Gradually increase volume
+
+3. Check Logs
+   Always check logs after sending
+   tail -f /var/email-server/logs/email-log.txt
+
+4. Use Real Addresses
+   Test with real addresses you control
+   Check spam folder
+
+5. Delay Between Emails
+   Keep delay at 5+ seconds
+   Prevents spam flags
+
+====================================
+TROUBLESHOOTING
+====================================
+
+Error: "Recipient list not found"
+--------------------------------
+Solution:
+Create the file:
+touch /var/email-server/email-list.txt
+nano /var/email-server/email-list.txt
+
+Error: "Template file not found"
+--------------------------------
+Solution:
+Check file exists:
+ls -l /var/email-server/letter.html
+
+Error: "Config file not found"
+------------------------------
+Solution:
+Check file exists:
+ls -l /var/email-server/config.json
+
+Error: "SMTP connection refused"
+--------------------------------
+Solution:
+Fix Postfix:
+cd /mail
+sudo bash fix-postfix.sh
+
+Error: "No valid email addresses found"
+--------------------------------------
+Solution:
+Check email-list.txt format:
+- One email per line
+- No spaces
+- Valid email format
+- Remove comment lines (starting with #)
+
+====================================
+COMPARISON WITH OTHER METHODS
+====================================
+
+Old Way (Complex):
+------------------
+php /var/email-server/scripts/email-sender.php bulk \
+  "/var/email-server/warmup-list.txt" \
+  "/var/email-server/letter.html" \
+  "Subject Line Here"
+
+New Way (Simple):
+-----------------
+php send.php
+
+Same result, much simpler!
+
+====================================
+FOR AUTOMATED WARMUP
+====================================
+
+If you want automated daily sending at specific times,
+see: WARMUP-SETUP-GUIDE.txt
+
+The warmup system uses:
+- warmup-list.txt (different from email-list.txt)
+- Cron job for scheduling
+- warmup-scheduler.php script
+
+====================================
+SUMMARY
+====================================
+
+1. Setup once:
+   - Edit email-list.txt (add recipients)
+   - Edit letter.html (email content)
+   - Edit config.json (settings)
+
+2. Send anytime:
+   php send.php
+
+3. Monitor:
+   tail -f /var/email-server/logs/email-log.txt
+
+That's all you need!
+
+====================================

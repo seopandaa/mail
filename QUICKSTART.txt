@@ -1,0 +1,229 @@
+====================================
+QUICK START GUIDE
+Email Server Setup & Simple Usage
+====================================
+
+====================================
+SIMPLE BULK EMAIL SENDING
+====================================
+
+If your server is already setup, just:
+
+1. Add recipients to email-list.txt
+   nano /var/email-server/email-list.txt
+
+2. Run the send script
+   cd /var/email-server
+   php send.php
+
+Done! That's all you need.
+
+====================================
+FIRST TIME SETUP
+====================================
+
+Step 1: Upload Package to VPS
+------------------------------
+scp email-server-setup.tar.gz root@YOUR_SERVER_IP:/root/
+
+Step 2: Extract on VPS
+----------------------
+ssh root@YOUR_SERVER_IP
+cd /root
+mkdir -p /mail
+tar -xzf email-server-setup.tar.gz -C /mail
+cd /mail
+
+Step 3: Run Server Setup
+-------------------------
+chmod +x setup-server.sh
+sudo bash setup-server.sh
+
+This installs:
+- Postfix (email server)
+- OpenDKIM (email signing)
+- PHP & PHPMailer
+- All configuration files
+
+Step 4: Configure DNS
+---------------------
+Get your DKIM key:
+cat /etc/opendkim/keys/fx.avameta.dev/mail.txt
+
+Add to your DNS (see DNS-RECORDS.txt for details):
+- MX record
+- A record
+- SPF record
+- DKIM record
+- DMARC record
+- PTR record (contact VPS provider)
+
+Wait 1-6 hours for DNS propagation.
+
+Step 5: Test Email Server
+--------------------------
+php /var/email-server/scripts/test-email.php
+
+If email sends successfully, you're ready!
+
+====================================
+DEPLOY SIMPLE SENDER
+====================================
+
+Run deployment script:
+cd /mail
+chmod +x deploy-simple.sh
+sudo bash deploy-simple.sh
+
+This copies send.php to /var/email-server/
+
+====================================
+CONFIGURE FOR SENDING
+====================================
+
+1. Add Recipients
+   --------------
+   nano /var/email-server/email-list.txt
+
+   Add one email per line:
+   john@example.com
+   sarah@gmail.com
+   mike@yahoo.com
+
+2. Customize Template
+   ------------------
+   nano /var/email-server/letter.html
+
+   Edit the HTML email template.
+   Use variables like {{COMPANY_NAME}}
+
+3. Configure Settings
+   ------------------
+   nano /var/email-server/config.json
+
+   Set sender name, email, delays, etc.
+
+====================================
+SEND EMAILS
+====================================
+
+cd /var/email-server
+php send.php
+
+The script will:
+- Load all recipients
+- Load template
+- Show summary
+- Ask for confirmation
+- Send emails with progress
+- Display results
+
+====================================
+FILE LOCATIONS
+====================================
+
+Main directory:  /var/email-server/
+Simple sender:   /var/email-server/send.php
+Recipients:      /var/email-server/email-list.txt
+Template:        /var/email-server/letter.html
+Configuration:   /var/email-server/config.json
+Logs:            /var/email-server/logs/
+
+====================================
+WARMUP FOR INDONESIAN PRIME TIME
+====================================
+
+For automated daily sending at 7 PM WIB:
+
+1. Set timezone:
+   timedatectl set-timezone Asia/Jakarta
+
+2. Edit config:
+   nano /var/email-server/config.json
+
+   Set:
+   "emails_per_day": 1,
+   "send_times": ["19:00"]
+
+3. Setup cron:
+   cd /mail
+   sudo bash setup-cron.sh
+
+4. Add warmup recipients:
+   nano /var/email-server/warmup-list.txt
+
+5. Check status:
+   php /var/email-server/scripts/warmup-scheduler.php status
+
+See WARMUP-SETUP-GUIDE.txt for details.
+
+====================================
+TROUBLESHOOTING
+====================================
+
+Problem: SMTP connection refused
+Solution: sudo bash /mail/fix-postfix.sh
+
+Problem: Cron not running
+Solution: sudo bash /mail/fix-cron.sh
+
+Problem: Wrong script version
+Solution: sudo bash /mail/update-scripts.sh
+
+See TROUBLESHOOTING.txt for complete guide.
+
+====================================
+MONITORING
+====================================
+
+View sending logs:
+tail -f /var/email-server/logs/email-log.txt
+
+Check service status:
+systemctl status postfix
+systemctl status opendkim
+
+View mail logs:
+tail -f /var/log/mail.log
+
+====================================
+DOCUMENTATION FILES
+====================================
+
+SIMPLE-USAGE.txt        Simple send.php guide
+WARMUP-SETUP-GUIDE.txt  Warmup configuration
+TROUBLESHOOTING.txt     Common issues & fixes
+DEPLOYMENT-GUIDE.txt    Full deployment steps
+DNS-RECORDS.txt         DNS configuration
+README.md               Complete documentation
+
+====================================
+SUMMARY
+====================================
+
+Setup (one time):
+1. bash setup-server.sh
+2. Configure DNS
+3. bash deploy-simple.sh
+
+Use (anytime):
+1. Edit email-list.txt
+2. php send.php
+
+That's it!
+
+====================================
+SUPPORT
+====================================
+
+Check logs first:
+tail -f /var/email-server/logs/email-log.txt
+
+Run diagnostics:
+systemctl status postfix
+php /var/email-server/scripts/test-email.php
+
+Read troubleshooting guide:
+cat /mail/TROUBLESHOOTING.txt
+
+====================================

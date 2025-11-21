@@ -1,0 +1,8 @@
+# Email List
+# Add one email address per line
+# Lines starting with # are ignored
+
+# Example emails (replace with real addresses):
+# user1@gmail.com
+# user2@yahoo.com
+# user3@outlook.com

@@ -2,7 +2,19 @@
 
 Complete, production-ready email server with automated warmup system using Postfix, OpenDKIM, and PHPMailer.
 
-## Quick Start
+## Quick Start - Send Bulk Emails
+
+### Super Simple Method
+
+```bash
+php send.php
+```
+
+That's it! The script automatically:
+- Loads recipients from `email-list.txt`
+- Uses template from `letter.html`
+- Applies settings from `config.json`
+- Sends all emails with confirmation
 
 ### Initial Setup
 
@@ -130,7 +142,26 @@ After running setup, you must:
 
 ## Sending Emails
 
-### Basic Methods
+### Simple Bulk Send (Recommended)
+
+**Just run:**
+```bash
+php send.php
+```
+
+**Setup files first:**
+```bash
+# Add recipients (one email per line)
+nano /var/email-server/email-list.txt
+
+# Edit email template
+nano /var/email-server/letter.html
+
+# Configure settings
+nano /var/email-server/config.json
+```
+
+### Alternative Methods
 
 **Test Email:**
 ```bash
@@ -145,19 +176,12 @@ php /var/email-server/scripts/email-sender.php single \
   "/var/email-server/letter.html"
 ```
 
-### Bulk Sending
-
-**Send to Email List:**
+**Manual Bulk Send:**
 ```bash
 php /var/email-server/scripts/email-sender.php bulk \
   "/var/email-server/warmup-list.txt" \
   "/var/email-server/letter.html" \
   "Optional Subject"
-```
-
-**Warmup Campaign:**
-```bash
-php /var/email-server/scripts/email-sender.php warmup
 ```
 
 ### Automated Warmup
