@@ -1,0 +1,470 @@
+====================================
+WARMUP SETUP GUIDE
+Configure Email Warmup for Indonesian Prime Time
+====================================
+
+====================================
+QUICK START - SETUP WARMUP
+====================================
+
+Step 1: Copy configuration file to server
+-----------------------------------------
+On your VPS, edit the configuration:
+
+nano /var/email-server/config.json
+
+Replace with the configuration below for Indonesian prime time.
+
+
+Step 2: Add recipient email addresses
+--------------------------------------
+Edit the warmup recipient list:
+
+nano /var/email-server/warmup-list.txt
+
+Add email addresses (one per line):
+
+john@example.com
+sarah@example.com
+mike@example.com
+anna@example.com
+
+IMPORTANT: Use REAL email addresses that you control!
+These should be addresses that can receive and won't mark as spam.
+
+
+Step 3: Customize email template
+---------------------------------
+Edit the email template:
+
+nano /var/email-server/letter.html
+
+Customize the content to match your needs.
+
+
+Step 4: Test the setup
+-----------------------
+Test sending an email manually:
+
+php /var/email-server/scripts/warmup-scheduler.php force
+
+
+Step 5: Check status
+--------------------
+Check the warmup scheduler status:
+
+php /var/email-server/scripts/warmup-scheduler.php status
+
+
+Step 6: Enable automatic sending
+---------------------------------
+The cron job runs every 5 minutes and checks if it's time to send.
+Based on your config schedule, it will send automatically at:
+- 19:00 WIB (Indonesian prime time)
+
+Verify cron is running:
+
+systemctl status cron
+crontab -l
+
+You should see:
+*/5 * * * * /usr/bin/php /var/email-server/scripts/warmup-scheduler.php run >> /var/email-server/logs/cron.log 2>&1
+
+
+====================================
+CONFIGURATION FOR INDONESIAN PRIME TIME
+====================================
+
+Copy this config to /var/email-server/config.json:
+
+{
+  "email_settings": {
+    "sender_email": "noreply@fx.avameta.dev",
+    "sender_name": "FX Avameta",
+    "reply_to_email": "support@fx.avameta.dev",
+    "reply_to_name": "Support Team"
+  },
+  "warmup_schedule": {
+    "enabled": true,
+    "emails_per_day": 1,
+    "send_times": [
+      "19:00"
+    ],
+    "recipient_list_file": "warmup-list.txt",
+    "template_file": "letter.html",
+    "subject_variations": [
+      "Quick update for you",
+      "Just checking in",
+      "Hope you're doing well",
+      "Thought you'd like this",
+      "A message for you",
+      "Important notification",
+      "Your daily update",
+      "News for today"
+    ],
+    "random_subject": true
+  },
+  "rate_limiting": {
+    "max_emails_per_hour": 50,
+    "delay_between_emails_seconds": 5,
+    "max_daily_emails": 200
+  },
+  "logging": {
+    "enabled": true,
+    "log_file": "/var/email-server/logs/email-log.txt",
+    "log_level": "INFO"
+  }
+}
+
+====================================
+TIMEZONE SETUP
+====================================
+
+Make sure your server timezone is set to WIB (Indonesian Western Time):
+
+# Check current timezone
+timedatectl
+
+# Set to Jakarta timezone (WIB)
+timedatectl set-timezone Asia/Jakarta
+
+# Verify
+date
+
+
+====================================
+CONFIGURATION OPTIONS EXPLAINED
+====================================
+
+1. emails_per_day
+   - Set to 1 = sends once per day
+   - Set to 3 = sends three times per day
+
+2. send_times
+   - Array of times when emails should be sent
+   - Format: "HH:MM" in 24-hour format
+   - Examples:
+     * ["19:00"] = 7:00 PM only
+     * ["09:00", "19:00"] = 9:00 AM and 7:00 PM
+     * ["10:00", "14:00", "20:00"] = 3 times per day
+
+3. Indonesian Prime Time Examples:
+
+   Evening only (7 PM):
+   "emails_per_day": 1,
+   "send_times": ["19:00"]
+
+   Morning and evening:
+   "emails_per_day": 2,
+   "send_times": ["09:00", "19:00"]
+
+   Three times per day:
+   "emails_per_day": 3,
+   "send_times": ["10:00", "14:00", "20:00"]
+
+   Peak hours:
+   "emails_per_day": 2,
+   "send_times": ["12:00", "19:00"]
+
+4. enabled
+   - true = warmup is active
+   - false = warmup is disabled
+
+5. random_subject
+   - true = randomly picks from subject_variations
+   - false = uses first subject only
+
+
+====================================
+AVAILABLE COMMANDS
+====================================
+
+1. Check Status
+   php /var/email-server/scripts/warmup-scheduler.php status
+
+   Shows:
+   - Is warmup enabled?
+   - How many emails sent today?
+   - When is next scheduled send?
+   - What times are configured?
+
+2. Test Send (Force)
+   php /var/email-server/scripts/warmup-scheduler.php force
+
+   Forces an immediate send, ignoring schedule.
+   Use this to test your configuration.
+
+3. Run (Scheduled Check)
+   php /var/email-server/scripts/warmup-scheduler.php run
+
+   Checks if it's time to send based on schedule.
+   This is what the cron job runs every 5 minutes.
+
+
+====================================
+MONITORING
+====================================
+
+Check warmup logs:
+tail -f /var/email-server/logs/warmup-scheduler.log
+
+Check email sending logs:
+tail -f /var/email-server/logs/email-log.txt
+
+Check cron execution logs:
+tail -f /var/email-server/logs/cron.log
+
+Check system mail logs:
+tail -f /var/log/mail.log
+
+View warmup state (run count):
+cat /var/email-server/logs/warmup-state.json
+
+
+====================================
+TESTING YOUR SETUP
+====================================
+
+Step 1: Test Postfix is running
+--------------------------------
+systemctl status postfix
+
+If not running:
+systemctl start postfix
+
+Step 2: Test manual email send
+-------------------------------
+php /var/email-server/scripts/test-email.php
+
+This should send a test email successfully.
+
+Step 3: Test warmup scheduler (force)
+--------------------------------------
+php /var/email-server/scripts/warmup-scheduler.php force
+
+This sends emails to all recipients in warmup-list.txt
+
+Step 4: Check status
+--------------------
+php /var/email-server/scripts/warmup-scheduler.php status
+
+Should show:
+- Enabled: Yes
+- Runs today: 1 / 1
+- Scheduled times: 19:00
+
+Step 5: Wait for automatic send
+--------------------------------
+The cron job checks every 5 minutes.
+At 19:00 WIB, it will automatically send emails.
+
+Monitor:
+tail -f /var/email-server/logs/cron.log
+
+
+====================================
+WARMUP BEST PRACTICES
+====================================
+
+1. Start Slow
+   - Week 1: 1 email per day to 5 recipients
+   - Week 2: 1 email per day to 10 recipients
+   - Week 3: 2 emails per day to 15 recipients
+   - Week 4: 2 emails per day to 20 recipients
+
+2. Use Real Addresses
+   - Gmail accounts you control
+   - Yahoo accounts you control
+   - Outlook accounts you control
+   - Mix different email providers
+
+3. Engage with Emails
+   - Open the emails
+   - Reply to some emails
+   - Move to inbox if in promotions
+   - Star/favorite some emails
+
+4. Monitor Deliverability
+   - Check spam folder daily
+   - Test with mail-tester.com weekly
+   - Monitor bounce rates
+   - Check DNS records monthly
+
+5. Gradual Increase
+   - Don't jump from 5 to 50 emails suddenly
+   - Increase by 20-30% per week
+   - Monitor spam complaints
+   - Adjust if issues arise
+
+
+====================================
+SCHEDULE EXAMPLES
+====================================
+
+Example 1: Conservative Warmup (Recommended)
+---------------------------------------------
+Send once daily at 7 PM:
+
+"emails_per_day": 1,
+"send_times": ["19:00"]
+
+Cron runs every 5 minutes, sends at 19:00 WIB.
+
+
+Example 2: Moderate Warmup
+---------------------------
+Send twice daily (morning and evening):
+
+"emails_per_day": 2,
+"send_times": ["09:00", "19:00"]
+
+Sends at 9 AM and 7 PM WIB.
+
+
+Example 3: Aggressive Warmup
+-----------------------------
+Send three times daily:
+
+"emails_per_day": 3,
+"send_times": ["10:00", "14:00", "20:00"]
+
+Sends at 10 AM, 2 PM, and 8 PM WIB.
+
+
+Example 4: Business Hours Only
+-------------------------------
+Send twice during business hours:
+
+"emails_per_day": 2,
+"send_times": ["10:00", "16:00"]
+
+Sends at 10 AM and 4 PM WIB.
+
+
+====================================
+TROUBLESHOOTING
+====================================
+
+Issue: Status shows "Enabled: No"
+---------------------------------
+Solution:
+Edit config.json and set:
+"enabled": true
+
+Then restart:
+systemctl restart postfix
+
+
+Issue: "Already reached daily limit"
+-------------------------------------
+This is normal! It means the configured number of
+emails for today has already been sent.
+
+Reset manually if needed:
+rm /var/email-server/logs/warmup-state.json
+
+
+Issue: Emails not sending automatically
+----------------------------------------
+Check cron is running:
+systemctl status cron
+
+Check cron job exists:
+crontab -l
+
+Check cron logs:
+tail -f /var/email-server/logs/cron.log
+
+Manually run to test:
+php /var/email-server/scripts/warmup-scheduler.php run
+
+
+Issue: "Not scheduled to run at this time"
+-------------------------------------------
+The scheduler only runs at configured times.
+Check your config.json send_times.
+
+To force send immediately:
+php /var/email-server/scripts/warmup-scheduler.php force
+
+
+Issue: Wrong timezone
+---------------------
+Set correct timezone:
+timedatectl set-timezone Asia/Jakarta
+
+Verify:
+date
+
+
+====================================
+ADVANCED: CUSTOM SCHEDULES
+====================================
+
+You can create multiple schedules for different days.
+The current setup runs the same schedule every day.
+
+To implement day-specific schedules, you would need to
+modify warmup-scheduler.php to check the day of week
+and use different send_times accordingly.
+
+Example custom logic (requires code modification):
+- Monday-Friday: ["09:00", "19:00"]
+- Saturday-Sunday: ["14:00"]
+
+
+====================================
+MAINTENANCE
+====================================
+
+Daily:
+- Check /var/email-server/logs/warmup-scheduler.log
+- Verify emails are being delivered
+
+Weekly:
+- Test with mail-tester.com
+- Review bounce rates
+- Update recipient list if needed
+
+Monthly:
+- Verify DNS records
+- Check DKIM signing
+- Review spam complaints
+- Increase send volume gradually
+
+
+====================================
+SECURITY REMINDERS
+====================================
+
+1. Never commit config.json to public repositories
+2. Rotate DKIM keys annually
+3. Monitor for unauthorized access
+4. Keep recipient list private
+5. Review logs for suspicious activity
+
+
+====================================
+GETTING HELP
+====================================
+
+If you need help:
+
+1. Check logs first:
+   tail -f /var/email-server/logs/warmup-scheduler.log
+
+2. Run status command:
+   php /var/email-server/scripts/warmup-scheduler.php status
+
+3. Test manual send:
+   php /var/email-server/scripts/warmup-scheduler.php force
+
+4. Check system time and timezone:
+   date
+   timedatectl
+
+5. Verify cron is running:
+   systemctl status cron
+   crontab -l
+
+====================================
