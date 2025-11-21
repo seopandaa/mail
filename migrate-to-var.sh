@@ -108,6 +108,17 @@ chmod 755 /var/email-server/logs 2>/dev/null || true
 
 # Update cron job to use correct paths
 echo "[7/8] Updating cron job..."
+
+# Check if cron is installed
+if ! command -v crontab &> /dev/null; then
+    echo "  ⚠ Cron not installed. Installing..."
+    apt-get update -qq
+    apt-get install -y cron
+    systemctl enable cron
+    systemctl start cron
+    echo "  ✓ Cron installed"
+fi
+
 CRON_JOB="*/5 * * * * /usr/bin/php /var/email-server/scripts/warmup-scheduler.php run >> /var/email-server/logs/cron.log 2>&1"
 (crontab -l 2>/dev/null | grep -v "warmup-scheduler.php"; echo "$CRON_JOB") | crontab -
 echo "  ✓ Cron job updated"
