@@ -1,0 +1,55 @@
+{
+  "domains": [
+    {
+      "domain": "fx.avameta.dev",
+      "name": "FX Avameta",
+      "sender_email": "noreply@fx.avameta.dev",
+      "sender_name": "FX Avameta",
+      "reply_to_email": "support@fx.avameta.dev",
+      "reply_to_name": "Support Team",
+      "enabled": true,
+      "is_default": true
+    },
+    {
+      "domain": "example.com",
+      "name": "Example Company",
+      "sender_email": "noreply@example.com",
+      "sender_name": "Example Company",
+      "reply_to_email": "support@example.com",
+      "reply_to_name": "Example Support",
+      "enabled": true,
+      "is_default": false
+    }
+  ],
+  "warmup_schedule": {
+    "enabled": true,
+    "emails_per_day": 5,
+    "send_times": [
+      "09:00",
+      "11:30",
+      "14:00",
+      "16:30",
+      "19:00"
+    ],
+    "recipient_list_file": "warmup-list.txt",
+    "template_file": "letter.html",
+    "subject_variations": [
+      "Quick update for you",
+      "Just checking in",
+      "Hope you're doing well",
+      "Thought you'd like this",
+      "A message for you"
+    ],
+    "random_subject": true
+  },
+  "rate_limiting": {
+    "max_emails_per_hour": 50,
+    "delay_between_emails_seconds": 5,
+    "max_daily_emails": 200
+  },
+  "logging": {
+    "enabled": true,
+    "log_file": "/var/email-server/logs/email-log.txt",
+    "log_level": "INFO"
+  }
+}

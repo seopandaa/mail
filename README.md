@@ -4,7 +4,7 @@ Complete, production-ready email server with automated warmup system using Postf
 
 ## Quick Start - Send Bulk Emails
 
-### Super Simple Method
+### Super Simple Method (Single Domain)
 
 ```bash
 php send.php
@@ -15,6 +15,23 @@ That's it! The script automatically:
 - Uses template from `letter.html`
 - Applies settings from `config.json`
 - Sends all emails with confirmation
+
+### Multi-Domain Method (NEW!)
+
+```bash
+php send-multi.php
+```
+
+Select which domain to send from:
+- Interactive domain selection menu
+- Supports unlimited domains
+- Per-domain DKIM signing
+- Domain-specific sender settings
+
+Or specify domain directly:
+```bash
+php send-multi.php --domain example.com
+```
 
 ### Initial Setup
 
@@ -272,6 +289,13 @@ sudo apt update && sudo apt upgrade -y
 
 ## Key Features
 
+### Multi-Domain Support (NEW!)
+- Send from multiple domains on one server
+- Interactive domain selection
+- Per-domain DKIM keys
+- Domain-specific sender settings
+- Easy domain management scripts
+
 ### Automated Warmup System
 - Runs 5 times per day at scheduled intervals
 - Configurable send times (default: 9am, 11:30am, 2pm, 4:30pm, 7pm)
@@ -295,12 +319,15 @@ Edit `/var/email-server/config.json`:
 ## Complete Documentation
 
 For detailed guides, see these files:
+- **MULTI-DOMAIN-GUIDE.txt** - Multi-domain setup and usage (NEW!)
 - **WARMUP-GUIDE.txt** - Complete warmup system documentation
 - **UPGRADE-INSTRUCTIONS.txt** - How to upgrade existing setup
 - **DEPLOYMENT-GUIDE.txt** - Initial server deployment
 - **CHANGES-SUMMARY.txt** - What's new in this version
 - **DNS-RECORDS.txt** - DNS configuration
 - **DIRECTORY-STRUCTURE.txt** - File system layout
+- **FIX-CONNECTION-REFUSED.txt** - Fix connection issues
+- **QUICK-REFERENCE.txt** - Command quick reference
 
 ## Support
 

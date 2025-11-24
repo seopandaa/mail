@@ -1,0 +1,494 @@
+====================================
+MULTI-DOMAIN EMAIL SERVER GUIDE
+====================================
+
+This guide explains how to add multiple domains to your email server
+and send emails from different domains.
+
+====================================
+OVERVIEW
+====================================
+
+The multi-domain system allows you to:
+✓ Send emails from multiple domains on one server
+✓ Select which domain to use for each campaign
+✓ Manage separate DKIM keys for each domain
+✓ Track emails per domain in logs
+
+====================================
+QUICK START
+====================================
+
+1. Add a New Domain:
+   sudo bash /mail/add-domain.sh example.com
+
+2. Configure DNS Records (see output from step 1)
+
+3. Update config.json:
+   nano /var/email-server/config.json
+
+4. Send emails with domain selection:
+   php send-multi.php
+
+====================================
+ADDING A NEW DOMAIN
+====================================
+
+Step 1: Run Add Domain Script
+------------------------------
+sudo bash /mail/add-domain.sh YOUR_DOMAIN.com
+
+Example:
+sudo bash /mail/add-domain.sh example.com
+
+This script will:
+✓ Create DKIM directory for the domain
+✓ Generate DKIM keys (2048-bit)
+✓ Set proper permissions
+✓ Add domain to OpenDKIM signing table
+✓ Add domain to OpenDKIM key table
+✓ Restart services
+✓ Display DNS records to add
+
+Step 2: Configure DNS Records
+------------------------------
+Add these records to your domain's DNS:
+
+1. MX Record:
+   Type: MX
+   Name: @
+   Value: YOUR_DOMAIN.com
+   Priority: 10
+
+2. A Record:
+   Type: A
+   Name: @
+   Value: YOUR_SERVER_IP
+
+3. SPF Record:
+   Type: TXT
+   Name: @
+   Value: v=spf1 ip4:YOUR_SERVER_IP -all
+
+4. DKIM Record:
+   Type: TXT
+   Name: mail._domainkey
+   Value: (copy from script output)
+
+5. DMARC Record:
+   Type: TXT
+   Name: _dmarc
+   Value: v=DMARC1; p=quarantine; rua=mailto:postmaster@YOUR_DOMAIN.com
+
+Step 3: Wait for DNS Propagation
+---------------------------------
+DNS changes can take 1-6 hours to propagate.
+
+Verify with:
+nslookup -type=mx YOUR_DOMAIN.com
+nslookup -type=txt mail._domainkey.YOUR_DOMAIN.com
+
+Step 4: Update Configuration
+-----------------------------
+Edit /var/email-server/config.json
+
+If using multi-domain config format:
+nano /var/email-server/config.json
+
+Add to "domains" array:
+{
+  "domain": "example.com",
+  "name": "Example Company",
+  "sender_email": "noreply@example.com",
+  "sender_name": "Example Company",
+  "reply_to_email": "support@example.com",
+  "reply_to_name": "Support Team",
+  "enabled": true,
+  "is_default": false
+}
+
+Step 5: Test the Domain
+------------------------
+php send-multi.php --domain example.com
+
+Or interactively:
+php send-multi.php
+
+====================================
+CONFIGURATION FORMAT
+====================================
+
+Multi-Domain Config (New Format)
+---------------------------------
+{
+  "domains": [
+    {
+      "domain": "fx.avameta.dev",
+      "name": "FX Avameta",
+      "sender_email": "noreply@fx.avameta.dev",
+      "sender_name": "FX Avameta",
+      "reply_to_email": "support@fx.avameta.dev",
+      "reply_to_name": "Support Team",
+      "enabled": true,
+      "is_default": true
+    },
+    {
+      "domain": "example.com",
+      "name": "Example Company",
+      "sender_email": "noreply@example.com",
+      "sender_name": "Example Company",
+      "reply_to_email": "support@example.com",
+      "reply_to_name": "Example Support",
+      "enabled": true,
+      "is_default": false
+    }
+  ],
+  "warmup_schedule": { ... },
+  "rate_limiting": { ... },
+  "logging": { ... }
+}
+
+Legacy Config (Single Domain)
+------------------------------
+The system is backward compatible with the old format:
+
+{
+  "email_settings": {
+    "sender_email": "noreply@fx.avameta.dev",
+    "sender_name": "FX Avameta",
+    ...
+  },
+  ...
+}
+
+send-multi.php will automatically detect and work with both formats.
+
+====================================
+SENDING EMAILS
+====================================
+
+Method 1: Interactive Selection
+--------------------------------
+php send-multi.php
+
+The script will:
+1. Show list of available domains
+2. Let you select which one to use
+3. Display confirmation
+4. Send emails
+
+Method 2: Command Line Domain Selection
+----------------------------------------
+php send-multi.php --domain example.com
+
+or
+
+php send-multi.php -d example.com
+
+Method 3: Use Original Script (Default Domain)
+-----------------------------------------------
+php send.php
+
+Uses the default domain or email_settings if using legacy config.
+
+====================================
+DOMAIN SETTINGS EXPLAINED
+====================================
+
+domain:
+  The domain name (e.g., "example.com")
+
+name:
+  Company/brand name for this domain
+
+sender_email:
+  Email address to send FROM
+  Usually: noreply@domain.com or hello@domain.com
+
+sender_name:
+  Display name for sender
+  Example: "Example Company"
+
+reply_to_email:
+  Email address for replies
+  Usually: support@domain.com or info@domain.com
+
+reply_to_name:
+  Display name for reply-to
+  Example: "Support Team"
+
+enabled:
+  true = can be used for sending
+  false = domain is disabled
+
+is_default:
+  true = used by send.php and as fallback
+  false = regular domain
+
+====================================
+MANAGING DOMAINS
+====================================
+
+List Available Domains
+----------------------
+The domains in config.json where "enabled": true
+
+View DKIM Keys
+--------------
+View DKIM public key for a domain:
+cat /etc/opendkim/keys/DOMAIN.com/mail.txt
+
+View DKIM private key location:
+ls -l /etc/opendkim/keys/DOMAIN.com/
+
+Enable/Disable Domain
+---------------------
+Edit config.json:
+nano /var/email-server/config.json
+
+Set "enabled": true or "enabled": false
+
+Set Default Domain
+------------------
+Edit config.json:
+nano /var/email-server/config.json
+
+Set "is_default": true for one domain
+Set "is_default": false for others
+
+Remove Domain
+-------------
+1. Remove from config.json
+2. Remove from OpenDKIM tables:
+   sudo nano /etc/opendkim/signing.table
+   sudo nano /etc/opendkim/key.table
+3. Remove DKIM keys:
+   sudo rm -rf /etc/opendkim/keys/DOMAIN.com
+4. Restart services:
+   sudo systemctl restart opendkim postfix
+
+====================================
+TEMPLATE VARIABLES
+====================================
+
+When using send-multi.php, these variables are available:
+
+{{DOMAIN}}           - Domain being used
+{{COMPANY_NAME}}     - Domain's company name
+{{SENDER_NAME}}      - Sender's name
+{{SENDER_EMAIL}}     - Sender's email
+{{RECIPIENT_EMAIL}}  - Recipient's email
+{{CURRENT_YEAR}}     - Current year
+
+Example template:
+<!DOCTYPE html>
+<html>
+<body>
+  <h1>Hello from {{COMPANY_NAME}}!</h1>
+  <p>This email is sent from {{SENDER_EMAIL}}</p>
+  <p>&copy; {{CURRENT_YEAR}} {{COMPANY_NAME}}</p>
+</body>
+</html>
+
+====================================
+LOGS AND MONITORING
+====================================
+
+All emails are logged with domain information:
+
+View logs:
+tail -f /var/email-server/logs/email-log.txt
+
+Filter by domain:
+grep "example.com" /var/email-server/logs/email-log.txt
+
+Log format:
+[2025-11-21 12:00:00] [SUCCESS] Email sent to: user@test.com | From: noreply@example.com | Subject: Hello
+
+====================================
+TROUBLESHOOTING
+====================================
+
+Problem: Domain not appearing in selection
+-------------------------------------------
+Check:
+1. Domain is in config.json
+2. "enabled": true is set
+3. Config JSON is valid (no syntax errors)
+
+Solution:
+php -r 'json_decode(file_get_contents("/var/email-server/config.json"));
+echo json_last_error_msg();'
+
+Problem: DKIM verification failing
+-----------------------------------
+Check:
+1. DNS records are correct
+2. DNS has propagated
+3. DKIM key in DNS matches file
+
+Verify DKIM:
+cat /etc/opendkim/keys/DOMAIN.com/mail.txt
+nslookup -type=txt mail._domainkey.DOMAIN.com
+
+Problem: Emails bouncing from new domain
+-----------------------------------------
+Check:
+1. DNS records (MX, SPF, DKIM, DMARC)
+2. Domain reputation (new domains need warmup)
+3. PTR record configured
+
+Test deliverability:
+Send test to mail-tester.com
+
+Problem: "Domain not found" error
+----------------------------------
+Check:
+1. Domain spelling in command line
+2. Domain exists in config.json
+3. Domain is enabled
+
+Solution:
+php send-multi.php (interactive selection)
+
+====================================
+BEST PRACTICES
+====================================
+
+1. Warmup New Domains
+   - Start with 5-10 emails per day
+   - Gradually increase over 2-4 weeks
+   - Send to engaged recipients first
+
+2. Separate Domains by Purpose
+   - Transactional: orders@domain.com
+   - Marketing: news@domain.com
+   - Support: support@domain.com
+
+3. Monitor Each Domain
+   - Track deliverability per domain
+   - Check spam scores regularly
+   - Monitor bounce rates
+
+4. Keep Consistent Branding
+   - Match sender name to domain
+   - Use recognizable from addresses
+   - Maintain reply-to consistency
+
+5. Backup DKIM Keys
+   - Copy /etc/opendkim/keys/ directory
+   - Store securely
+   - Document key locations
+
+====================================
+ADVANCED USAGE
+====================================
+
+Per-Domain Templates
+--------------------
+Create template files per domain:
+/var/email-server/templates/fx.avameta.dev.html
+/var/email-server/templates/example.com.html
+
+Modify send-multi.php to load domain-specific templates.
+
+Per-Domain Rate Limits
+----------------------
+Add rate_limiting to domain config:
+{
+  "domain": "example.com",
+  ...
+  "rate_limiting": {
+    "max_emails_per_hour": 20,
+    "delay_between_emails_seconds": 10
+  }
+}
+
+Per-Domain Recipient Lists
+---------------------------
+Use separate lists per domain:
+/var/email-server/email-list-fx.avameta.dev.txt
+/var/email-server/email-list-example.com.txt
+
+====================================
+MIGRATION GUIDE
+====================================
+
+From Single Domain to Multi-Domain
+-----------------------------------
+
+1. Backup current config:
+   cp /var/email-server/config.json /var/email-server/config.json.backup
+
+2. Copy multi-domain template:
+   cp /mail/config-multi-domain.json /var/email-server/config.json
+
+3. Update first domain with your current settings
+
+4. Add new domains as needed
+
+5. Test with send-multi.php
+
+====================================
+EXAMPLES
+====================================
+
+Example 1: Add domain and send
+-------------------------------
+sudo bash /mail/add-domain.sh example.com
+# Configure DNS
+nano /var/email-server/config.json
+# Add domain config
+php send-multi.php --domain example.com
+
+Example 2: Interactive domain selection
+----------------------------------------
+php send-multi.php
+# Select from menu
+# Confirm and send
+
+Example 3: Send from default domain
+------------------------------------
+php send.php
+# Uses default domain from config
+
+====================================
+COMMAND REFERENCE
+====================================
+
+Add domain:
+  sudo bash /mail/add-domain.sh DOMAIN.com
+
+Send with domain selection:
+  php send-multi.php
+  php send-multi.php --domain DOMAIN.com
+  php send-multi.php -d DOMAIN.com
+
+View DKIM key:
+  cat /etc/opendkim/keys/DOMAIN.com/mail.txt
+
+Check DNS:
+  nslookup -type=mx DOMAIN.com
+  nslookup -type=txt mail._domainkey.DOMAIN.com
+  nslookup -type=txt _dmarc.DOMAIN.com
+
+Restart services:
+  sudo systemctl restart opendkim postfix
+
+====================================
+SUPPORT
+====================================
+
+Check logs:
+  tail -f /var/email-server/logs/email-log.txt
+
+Verify config:
+  php -r 'print_r(json_decode(file_get_contents("/var/email-server/config.json"), true));'
+
+List domains:
+  php send-multi.php
+
+Test domain:
+  php send-multi.php -d DOMAIN.com
+
+====================================

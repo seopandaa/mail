@@ -1,0 +1,194 @@
+====================================
+MULTI-DOMAIN QUICK START
+====================================
+
+Add multiple domains to your email server and send from different domains.
+
+====================================
+STEP 1: ADD A NEW DOMAIN
+====================================
+
+sudo bash /mail/add-domain.sh example.com
+
+This will:
+✓ Generate DKIM keys
+✓ Configure OpenDKIM
+✓ Show DNS records to add
+✓ Provide next steps
+
+====================================
+STEP 2: CONFIGURE DNS
+====================================
+
+Add these records to your domain's DNS provider:
+
+1. MX Record
+2. A Record
+3. SPF Record
+4. DKIM Record (copy from script output)
+5. DMARC Record
+
+Wait 1-6 hours for DNS propagation.
+
+====================================
+STEP 3: UPDATE CONFIG.JSON
+====================================
+
+nano /var/email-server/config.json
+
+Add to "domains" array:
+
+{
+  "domain": "example.com",
+  "name": "Example Company",
+  "sender_email": "noreply@example.com",
+  "sender_name": "Example Company",
+  "reply_to_email": "support@example.com",
+  "reply_to_name": "Support Team",
+  "enabled": true,
+  "is_default": false
+}
+
+Or use the multi-domain template:
+
+cp /mail/config-multi-domain.json /var/email-server/config.json
+nano /var/email-server/config.json
+
+====================================
+STEP 4: SEND EMAILS
+====================================
+
+Method 1: Interactive Selection
+--------------------------------
+php send-multi.php
+
+The script will:
+1. Show list of domains
+2. Let you select one
+3. Send emails from that domain
+
+Method 2: Command Line
+----------------------
+php send-multi.php --domain example.com
+
+or
+
+php send-multi.php -d example.com
+
+====================================
+QUICK COMMANDS
+====================================
+
+Add domain:
+  sudo bash /mail/add-domain.sh DOMAIN.com
+
+List domains:
+  sudo bash /mail/list-domains.sh
+
+Send (interactive):
+  php send-multi.php
+
+Send (specific domain):
+  php send-multi.php --domain DOMAIN.com
+
+View DKIM key:
+  cat /etc/opendkim/keys/DOMAIN.com/mail.txt
+
+Check DNS:
+  nslookup -type=mx DOMAIN.com
+  nslookup -type=txt mail._domainkey.DOMAIN.com
+
+====================================
+EXAMPLE WORKFLOW
+====================================
+
+# Add domain
+sudo bash /mail/add-domain.sh example.com
+
+# Copy DNS records shown in output
+
+# Wait for DNS propagation (check with nslookup)
+
+# Update config
+nano /var/email-server/config.json
+
+# Test sending
+php send-multi.php --domain example.com
+
+====================================
+CONFIGURATION EXAMPLE
+====================================
+
+{
+  "domains": [
+    {
+      "domain": "fx.avameta.dev",
+      "name": "FX Avameta",
+      "sender_email": "noreply@fx.avameta.dev",
+      "sender_name": "FX Avameta",
+      "reply_to_email": "support@fx.avameta.dev",
+      "reply_to_name": "Support Team",
+      "enabled": true,
+      "is_default": true
+    },
+    {
+      "domain": "example.com",
+      "name": "Example Company",
+      "sender_email": "noreply@example.com",
+      "sender_name": "Example Company",
+      "reply_to_email": "support@example.com",
+      "reply_to_name": "Example Support",
+      "enabled": true,
+      "is_default": false
+    }
+  ],
+  "warmup_schedule": { ... },
+  "rate_limiting": { ... },
+  "logging": { ... }
+}
+
+====================================
+TEMPLATE VARIABLES
+====================================
+
+Use these in your email template (letter.html):
+
+{{DOMAIN}}           - example.com
+{{COMPANY_NAME}}     - Example Company
+{{SENDER_NAME}}      - Example Company
+{{SENDER_EMAIL}}     - noreply@example.com
+{{RECIPIENT_EMAIL}}  - recipient@test.com
+{{CURRENT_YEAR}}     - 2025
+
+====================================
+TROUBLESHOOTING
+====================================
+
+Domain not appearing?
+  - Check config.json syntax
+  - Ensure "enabled": true
+  - Run: php send-multi.php (to see list)
+
+DKIM errors?
+  - Verify DNS records
+  - Check: cat /etc/opendkim/keys/DOMAIN.com/mail.txt
+  - Compare with DNS TXT record
+
+Emails bouncing?
+  - Verify all DNS records (MX, SPF, DKIM, DMARC)
+  - Test: send to mail-tester.com
+  - Warmup new domains gradually
+
+====================================
+COMPLETE DOCUMENTATION
+====================================
+
+See MULTI-DOMAIN-GUIDE.txt for:
+- Detailed setup instructions
+- Advanced configuration
+- Domain management
+- Troubleshooting
+- Best practices
+- Examples
+
+====================================
